@@ -3,6 +3,7 @@
 import json
 import rtmidi
 import time
+from time import sleep
 from rtmidi.midiutil import open_midiinput, open_midioutput
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from .constants import (
     IDENTITY_REPLY,
     MANUFACTURER_ID,
     GT1000_FAMILY,
+    DEVICE_ID_BCAST,
 )
 
 
@@ -47,7 +49,7 @@ def receive_midi_message_cb(data, gt1000):
 class GT1000:
     def __init__(self):
         self.tables = {}
-        self.identity = None
+        self.device_id = None
         for i in (Path(__file__).parent / "specs").glob("*.json"):
             table_name = i.name.split(".")[0]
             self.tables[table_name] = json.loads(i.read_text())
@@ -70,7 +72,16 @@ class GT1000:
     #        print_has_hex(msg)
 
     def request_identity(self):
-        self.send_message(IDENTITY_REQUEST_MSG)
+        # TODO: this should be a background thread so we update the ID if the
+        # device comes online at some point
+        for i in range(60):
+            self.send_message(IDENTITY_REQUEST_MSG)
+            if self.device_id is not None:
+                print("Identity received")
+                return
+            sleep(1)
+        print("Identity not received, using broadcast")
+        self.device_id = DEVICE_ID_BCAST
 
     def open_ports(
         self,
@@ -90,7 +101,7 @@ class GT1000:
         self.midi_in.ignore_types(sysex=False, active_sense=False)
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         # Device identification
-        self.send_message([0xF0, 0x7E, 0x7F, 0x06, 0x01, 0xF7])
+        self.request_identity()
         return True
 
     def calculate_checksum(self, data):

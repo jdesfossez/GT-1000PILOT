@@ -1,9 +1,10 @@
 MANUFACTURER_ID = [0x41]  # Roland
 GT1000_FAMILY = [0x4F, 0x03]
-DEVICE_ID_TMP = [0xFF]  # this gets overwritten by gt1000.device_id
+# this is the broadcast address, it gets replaced if we receive a valid device_id
+DEVICE_ID_BCAST = [0x7F]
 MODEL_ID = [0x00, 0x00, 0x00, 0x4F]
 COMMAND_ID = [0x12]
-SYSEX_HEADER = MANUFACTURER_ID + DEVICE_ID_TMP + MODEL_ID + COMMAND_ID
+SYSEX_HEADER = MANUFACTURER_ID + DEVICE_ID_BCAST + MODEL_ID + COMMAND_ID
 
 SYSEX_START = [0xF0]
 SYSEX_END = [0xF7]
