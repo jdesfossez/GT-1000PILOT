@@ -1,21 +1,11 @@
 from callbacks import register_callbacks
 from dash import Dash, html  # type: ignore
 from gt_1000.gt1000 import GT1000
-import rtmidi
-
-PORTNAME = "UM-ONE"
-midi_out = rtmidi.MidiOut()
-port_count = midi_out.get_port_count()
-
-for i in range(port_count):
-    if midi_out.get_port_name(i).startswith(PORTNAME):
-        midi_out.open_port(i)
-        print(f"Opening port {i} {midi_out.get_port_name(1)}")
-if not midi_out.is_port_open():
-    print("Failed to open MIDI out port")
 
 # Initialize the GT1000 class
 gt1000 = GT1000()
+ret = gt1000.open_ports()
+print(f"Open ports: {ret}")
 
 # Initialize the Dash app
 app = Dash(__name__)
@@ -53,7 +43,7 @@ app.layout = html.Div(
 )
 
 # Import and register callbacks
-register_callbacks(app, gt1000, midi_out)
+register_callbacks(app, gt1000)
 
 # Run the app
 if __name__ == "__main__":
