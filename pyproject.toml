@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "boss-control"
+version = "0.1.0"
+description = ""
+authors = ["Julien Desfossez"]
+license = "GPLv2"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+dash = "^2.17.1"
+rtmidi = "^2.5.0"
+
+[tool.poetry.group.dev.dependencies]
+python-lsp-server = "^1.11.0"
+pylsp-mypy = "^0.6.8"
+python-lsp-ruff = "^2.2.2"
+ruff = "^0.6.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
