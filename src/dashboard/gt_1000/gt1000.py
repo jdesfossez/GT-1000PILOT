@@ -74,7 +74,7 @@ class GT1000:
     def request_identity(self):
         # TODO: this should be a background thread so we update the ID if the
         # device comes online at some point
-        for i in range(60):
+        for i in range(6):
             self.send_message(IDENTITY_REQUEST_MSG)
             if self.device_id is not None:
                 print("Identity received")
