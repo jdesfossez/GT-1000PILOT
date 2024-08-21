@@ -13,8 +13,10 @@ from .constants import (
     PATCH_NAMES_LEN,
     EDITOR_REPLY1,
     PATCH_NAMES_BEGIN_OFFSET,
+    EDITOR_REPLY3,
     EDITOR_MODE_COMMAND1,
     EDITOR_MODE_COMMAND2,
+    EDITOR_MODE_COMMAND3,
     DT1_SYSEX_HEADER,
     DT1_COMMAND_ID,
     RQ1_SYSEX_HEADER,
@@ -27,6 +29,10 @@ from .constants import (
     GT1000_FAMILY,
     DEVICE_ID_BCAST,
 )
+
+SLEEP_WAIT_SEC = 0.1
+RETRY_COUNT = 100
+
 
 
 def bytes_to_int(value):
@@ -47,11 +53,6 @@ class MidiInputHandler(object):
         self._wallclock += deltatime
         print(f"[%s] @%0.6f %s" % (self.port, self._wallclock, bytes_as_hex(message)))
         gt1000.process_received_message(message)
-
-
-def receive_midi_message_cb(data, gt1000):
-    # print("IN", data, gt1000.midi_in)
-    print("IN", data, gt1000)
 
 
 class GT1000:
@@ -83,9 +84,9 @@ class GT1000:
     def request_identity(self):
         # TODO: this should be a background thread so we update the ID if the
         # device comes online at some point
-        for i in range(6):
+        for i in range(RETRY_COUNT):
             self.send_message(IDENTITY_REQUEST_MSG)
-            sleep(1)
+            sleep(SLEEP_WAIT_SEC)
             if self.device_id is not None:
                 print("Identity received")
                 return True
@@ -110,13 +111,18 @@ class GT1000:
         # not sure if active_sense is useful yet
         self.midi_in.ignore_types(sysex=False, active_sense=False)
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
+        return self.open_editor_mode()
+
+    def open_editor_mode(self):
         # Device identification
         if not self.request_identity():
             return False
-        if not self.send_editor_command_wait_state_change(EDITOR_MODE_COMMAND1, [0], 2):
+        # FIXME we don't compute the right checksum here for some reason, but the others are good
+        if not self.send_editor_command_wait_state_change(RQ1_SYSEX_HEADER, EDITOR_MODE_COMMAND1, [0], 2):
             return False
-        # FIXME: DT
-        if not self.send_editor_command_wait_state_change(EDITOR_MODE_COMMAND2, None, 2, DT=True):
+        if not self.send_editor_command_wait_state_change(DT1_SYSEX_HEADER, EDITOR_MODE_COMMAND2, None, 2):
+            return False
+        if not self.send_editor_command_wait_state_change(RQ1_SYSEX_HEADER, EDITOR_MODE_COMMAND3, None, 2):
             return False
         return True
 
@@ -159,22 +165,20 @@ class GT1000:
         address_value = start_address + length
         return self._build_message(RQ1_SYSEX_HEADER, address_value)
 
-    def build_rq_message_from_code(self, code, override_checksum=None, DT=False):
+    def build_message_from_code(self, header, code, override_checksum=None):
         # These don't look like address + offset queries, maybe they are, but it's
         # not understood yet.
-        if DT:
-            return self._build_message(DT1_SYSEX_HEADER, code, override_checksum)
-        return self._build_message(RQ1_SYSEX_HEADER, code, override_checksum)
+        return self._build_message(header, code, override_checksum)
 
     def get_patch_names(self):
         self.send_message(self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN))
 
-    def send_editor_command_wait_state_change(self, command, override_checksum, expected_state, DT=False):
-        self.send_message(self.build_rq_message_from_code(command, override_checksum, DT))
-        for i in range(10):
+    def send_editor_command_wait_state_change(self, header, command, override_checksum, expected_state):
+        self.send_message(self.build_message_from_code(header, command, override_checksum))
+        for i in range(RETRY_COUNT):
             if self.current_state_message == expected_state:
                 return True
-            sleep(1)
+            sleep(SLEEP_WAIT_SEC)
         return False
 
     def _msg_editor_command1_reply(self, message):
@@ -188,7 +192,27 @@ class GT1000:
         for i in range(len(message)):
             if message[i] != expected_message[i]:
                 return False
-            print("%x matches" % message[i])
+        return True
+
+    def _msg_editor_command2_reply(self, message):
+        if len(message) != 15:
+            return False
+
+        expected_message = self.build_message_from_code(DT1_SYSEX_HEADER, EDITOR_MODE_COMMAND2)
+        for i in range(len(message)):
+            if message[i] != expected_message[i]:
+                return False
+        return True
+
+    def _msg_editor_command3_reply(self, message):
+        if len(message) != 15:
+            return False
+
+        expected_checksum = self.calculate_checksum(EDITOR_REPLY3)
+        expected_message = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID + EDITOR_REPLY3 + expected_checksum + SYSEX_END
+        for i in range(len(message)):
+            if message[i] != expected_message[i]:
+                return False
         return True
 
     def _msg_identity_reply(self, message):
@@ -244,6 +268,14 @@ class GT1000:
         elif self.current_state_message == 1 and self._msg_editor_command1_reply(message):
             print("command1 ok")
             self.current_state_message = 2
+            return
+        elif self.current_state_message == 2 and self._msg_editor_command2_reply(message):
+            print("command2 ok")
+            self.current_state_message = 3
+            return
+        elif self.current_state_message == 3 and self._msg_editor_command3_reply(message):
+            print("command3 ok")
+            self.current_state_message = 4
             return
 
     def _construct_address_value(self, start_section, option, setting, param):
