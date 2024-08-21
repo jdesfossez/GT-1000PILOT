@@ -14,9 +14,12 @@ from .constants import (
     EDITOR_REPLY1,
     PATCH_NAMES_BEGIN_OFFSET,
     EDITOR_REPLY3,
-    EDITOR_MODE_COMMAND1,
-    EDITOR_MODE_COMMAND2,
-    EDITOR_MODE_COMMAND3,
+    EDITOR_MODE_ADDRESS_FETCH1,
+    EDITOR_MODE_ADDRESS_LEN1,
+    EDITOR_MODE_ADDRESS_SET2,
+    EDITOR_MODE_ADDESS_VALUE2,
+    EDITOR_MODE_ADDRESS_FETCH3,
+    EDITOR_MODE_ADDRESS_LEN3,
     DT1_SYSEX_HEADER,
     DT1_COMMAND_ID,
     RQ1_SYSEX_HEADER,
@@ -60,6 +63,7 @@ class GT1000:
         self.tables = {}
         self.device_id = None
         self.current_state_message = None
+        self.received_data = None
         for i in (Path(__file__).parent / "specs").glob("*.json"):
             table_name = i.name.split(".")[0]
             self.tables[table_name] = json.loads(i.read_text())
@@ -113,16 +117,38 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
+    def fetch_mem(self, offset, length, override_checksum=None):
+        self.send_message(self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum))
+
+    def set_byte(self, offset, data):
+        self.send_message(self.assemble_message(DT1_SYSEX_HEADER, offset + data))
+
+    def fetch_patch_names(self):
+        self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
+        data = self.wait_recv_data()
+        data_offset = 0
+        for i in range(int(len(data[1])/16)):
+            name = ""
+            for j in range(16):
+                name += chr(data[1][data_offset])
+                data_offset += 1
+            print(name)
+
     def open_editor_mode(self):
         # Device identification
         if not self.request_identity():
             return False
         # FIXME we don't compute the right checksum here for some reason, but the others are good
-        if not self.send_editor_command_wait_state_change(RQ1_SYSEX_HEADER, EDITOR_MODE_COMMAND1, [0], 2):
+        self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH1, EDITOR_MODE_ADDRESS_LEN1, [0])
+        if not self.wait_state_change(2):
             return False
-        if not self.send_editor_command_wait_state_change(DT1_SYSEX_HEADER, EDITOR_MODE_COMMAND2, None, 2):
+
+        self.set_byte(EDITOR_MODE_ADDRESS_SET2, EDITOR_MODE_ADDESS_VALUE2)
+        if not self.wait_state_change(3):
             return False
-        if not self.send_editor_command_wait_state_change(RQ1_SYSEX_HEADER, EDITOR_MODE_COMMAND3, None, 2):
+
+        self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH3, EDITOR_MODE_ADDRESS_LEN3)
+        if not self.wait_state_change(4):
             return False
         return True
 
@@ -143,6 +169,8 @@ class GT1000:
         return msg
 
     def send_message(self, message):
+        # This whole thing is racy, but there is no real solution here
+        self.received_data = None
         print(f"sending: {bytes_as_hex(message)}")
         self.midi_out.send_message(message)
 
@@ -165,21 +193,25 @@ class GT1000:
         address_value = start_address + length
         return self._build_message(RQ1_SYSEX_HEADER, address_value)
 
-    def build_message_from_code(self, header, code, override_checksum=None):
-        # These don't look like address + offset queries, maybe they are, but it's
-        # not understood yet.
-        return self._build_message(header, code, override_checksum)
+    def assemble_message(self, header, payload, override_checksum=None):
+        return self._build_message(header, payload, override_checksum)
 
     def get_patch_names(self):
         self.send_message(self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN))
 
-    def send_editor_command_wait_state_change(self, header, command, override_checksum, expected_state):
-        self.send_message(self.build_message_from_code(header, command, override_checksum))
+    def wait_state_change(self, expected_state):
         for i in range(RETRY_COUNT):
             if self.current_state_message == expected_state:
                 return True
             sleep(SLEEP_WAIT_SEC)
         return False
+
+    def wait_recv_data(self):
+        for i in range(RETRY_COUNT):
+            if self.received_data is not None:
+                return self.received_data
+            sleep(SLEEP_WAIT_SEC)
+        return None
 
     def _msg_editor_command1_reply(self, message):
         if len(message) != 15:
@@ -198,7 +230,7 @@ class GT1000:
         if len(message) != 15:
             return False
 
-        expected_message = self.build_message_from_code(DT1_SYSEX_HEADER, EDITOR_MODE_COMMAND2)
+        expected_message = self.assemble_message(DT1_SYSEX_HEADER, EDITOR_MODE_ADDRESS_SET2 + EDITOR_MODE_ADDESS_VALUE2)
         for i in range(len(message)):
             if message[i] != expected_message[i]:
                 return False
@@ -261,6 +293,7 @@ class GT1000:
 
     def process_received_message(self, message):
         print("receiving")
+        # Process initial handshake as a state machine, the rest is just get/set
         if self.current_state_message is None and self._msg_identity_reply(message):
             self.current_state_message = 1
             print("identity ok")
@@ -277,6 +310,15 @@ class GT1000:
             print("command3 ok")
             self.current_state_message = 4
             return
+        received_data_header = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID
+        for i in range(len(received_data_header)):
+            if message[i] != received_data_header[i]:
+                print("Ignored received data")
+                return
+        received_offset = message[len(received_data_header):len(received_data_header)+4]
+        # The actual data is after the header and before the checksum + SYSEX_END
+        self.received_data = (received_offset, message[len(received_data_header) + 4:-2])
+        print(f"data received: {self.received_data}")
 
     def _construct_address_value(self, start_section, option, setting, param):
         if start_section not in self.tables["base-addresses"]:
