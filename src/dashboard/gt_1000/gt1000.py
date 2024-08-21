@@ -9,7 +9,15 @@ from pathlib import Path
 
 from .constants import (
     SYSEX_END,
-    SYSEX_HEADER,
+    MODEL_ID,
+    PATCH_NAMES_LEN,
+    EDITOR_REPLY1,
+    PATCH_NAMES_BEGIN_OFFSET,
+    EDITOR_MODE_COMMAND1,
+    EDITOR_MODE_COMMAND2,
+    DT1_SYSEX_HEADER,
+    DT1_COMMAND_ID,
+    RQ1_SYSEX_HEADER,
     SYSEX_START,
     IDENTITY_REQUEST_MSG,
     NON_RT_MSG,
@@ -50,6 +58,7 @@ class GT1000:
     def __init__(self):
         self.tables = {}
         self.device_id = None
+        self.current_state_message = None
         for i in (Path(__file__).parent / "specs").glob("*.json"):
             table_name = i.name.split(".")[0]
             self.tables[table_name] = json.loads(i.read_text())
@@ -62,11 +71,11 @@ class GT1000:
             "live_fx4": "patch3 (temporary patch)",
         }
 
-    #        msg = self.get_message(
+    #        msg = self.build_dt_message(
     #            self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", "DEFRETTER"
     #        )
     #        print_has_hex(msg)
-    #        msg = self.get_message(
+    #        msg = self.build_dt_message(
     #            self.base_address_pointers["live_fx3"], "fx3", "FX1 TYPE", "FLANGER"
     #        )
     #        print_has_hex(msg)
@@ -76,12 +85,13 @@ class GT1000:
         # device comes online at some point
         for i in range(6):
             self.send_message(IDENTITY_REQUEST_MSG)
+            sleep(1)
             if self.device_id is not None:
                 print("Identity received")
-                return
-            sleep(1)
+                return True
         print("Identity not received, using broadcast")
         self.device_id = DEVICE_ID_BCAST
+        return False
 
     def open_ports(
         self,
@@ -101,7 +111,13 @@ class GT1000:
         self.midi_in.ignore_types(sysex=False, active_sense=False)
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         # Device identification
-        self.request_identity()
+        if not self.request_identity():
+            return False
+        if not self.send_editor_command_wait_state_change(EDITOR_MODE_COMMAND1, [0], 2):
+            return False
+        # FIXME: DT
+        if not self.send_editor_command_wait_state_change(EDITOR_MODE_COMMAND2, None, 2, DT=True):
+            return False
         return True
 
     def calculate_checksum(self, data):
@@ -109,13 +125,13 @@ class GT1000:
         return [128 - total]
 
     def enable_fx(self, fx_id):
-        msg = self.get_message(
+        msg = self.build_dt_message(
             self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", "ON"
         )
         return msg
 
     def disable_fx(self, fx_id):
-        msg = self.get_message(
+        msg = self.build_dt_message(
             self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", "OFF"
         )
         return msg
@@ -124,14 +140,56 @@ class GT1000:
         print(f"sending: {bytes_as_hex(message)}")
         self.midi_out.send_message(message)
 
-    def get_message(self, start_section, option, setting, param):
+    def _build_message(self, header, address_value, override_checksum=None):
+        if override_checksum is not None:
+            checksum = override_checksum
+        else:
+            checksum = self.calculate_checksum(address_value)
+        # Override the broadcast address
+        header[1] = self.device_id
+        return SYSEX_START + header + address_value + checksum + SYSEX_END
+
+    def build_dt_message(self, start_section, option, setting, param):
         address_value = self._construct_address_value(
             start_section, option, setting, param
         )
-        checksum = self.calculate_checksum(address_value)
-        header = SYSEX_HEADER
-        header[1] = self.device_id
-        return SYSEX_START + SYSEX_HEADER + address_value + checksum + SYSEX_END
+        return self._build_message(DT1_SYSEX_HEADER, address_value)
+
+    def build_rq_message(self, start_address, length):
+        address_value = start_address + length
+        return self._build_message(RQ1_SYSEX_HEADER, address_value)
+
+    def build_rq_message_from_code(self, code, override_checksum=None, DT=False):
+        # These don't look like address + offset queries, maybe they are, but it's
+        # not understood yet.
+        if DT:
+            return self._build_message(DT1_SYSEX_HEADER, code, override_checksum)
+        return self._build_message(RQ1_SYSEX_HEADER, code, override_checksum)
+
+    def get_patch_names(self):
+        self.send_message(self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN))
+
+    def send_editor_command_wait_state_change(self, command, override_checksum, expected_state, DT=False):
+        self.send_message(self.build_rq_message_from_code(command, override_checksum, DT))
+        for i in range(10):
+            if self.current_state_message == expected_state:
+                return True
+            sleep(1)
+        return False
+
+    def _msg_editor_command1_reply(self, message):
+        if len(message) != 15:
+            return False
+
+        # FIXME: again here we compute 0x80 but expect 0x79
+        #expected_checksum = self.calculate_checksum(EDITOR_MODE_COMMAND1)
+        expected_checksum = [0x79]
+        expected_message = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID + EDITOR_REPLY1 + expected_checksum + SYSEX_END
+        for i in range(len(message)):
+            if message[i] != expected_message[i]:
+                return False
+            print("%x matches" % message[i])
+        return True
 
     def _msg_identity_reply(self, message):
         # Byte Explanation
@@ -175,9 +233,17 @@ class GT1000:
             print("GT-1000CORE detected")
             self.model = "GT-1000CORE"
         self.device_id = device_id
+        return True
 
     def process_received_message(self, message):
-        if self._msg_identity_reply(message):
+        print("receiving")
+        if self.current_state_message is None and self._msg_identity_reply(message):
+            self.current_state_message = 1
+            print("identity ok")
+            return
+        elif self.current_state_message == 1 and self._msg_editor_command1_reply(message):
+            print("command1 ok")
+            self.current_state_message = 2
             return
 
     def _construct_address_value(self, start_section, option, setting, param):
