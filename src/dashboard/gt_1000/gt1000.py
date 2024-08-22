@@ -37,7 +37,6 @@ SLEEP_WAIT_SEC = 0.1
 RETRY_COUNT = 100
 
 
-
 def bytes_to_int(value):
     return int.from_bytes(value, byteorder="big")
 
@@ -118,14 +117,21 @@ class GT1000:
         return self.open_editor_mode()
 
     def get_fx1(self):
-        self.fetch_mem(self._construct_address_value(self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", None), [0x0, 0x0, 0x0, 0x2])
+        self.fetch_mem(
+            self._construct_address_value(
+                self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", None
+            ),
+            [0x0, 0x0, 0x0, 0x2],
+        )
         data = self.wait_recv_data()
         for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
             if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
                 print(i)
 
     def fetch_mem(self, offset, length, override_checksum=None):
-        self.send_message(self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum))
+        self.send_message(
+            self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum)
+        )
 
     def set_byte(self, offset, data):
         self.send_message(self.assemble_message(DT1_SYSEX_HEADER, offset + data))
@@ -134,7 +140,7 @@ class GT1000:
         self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
         data = self.wait_recv_data()
         data_offset = 0
-        for i in range(int(len(data[1])/16)):
+        for i in range(int(len(data[1]) / 16)):
             name = ""
             for j in range(16):
                 name += chr(data[1][data_offset])
@@ -204,7 +210,9 @@ class GT1000:
         return self._build_message(header, payload, override_checksum)
 
     def get_patch_names(self):
-        self.send_message(self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN))
+        self.send_message(
+            self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
+        )
 
     def wait_state_change(self, expected_state):
         for i in range(RETRY_COUNT):
@@ -225,9 +233,18 @@ class GT1000:
             return False
 
         # FIXME: again here we compute 0x80 but expect 0x79
-        #expected_checksum = self.calculate_checksum(EDITOR_MODE_COMMAND1)
+        # expected_checksum = self.calculate_checksum(EDITOR_MODE_COMMAND1)
         expected_checksum = [0x79]
-        expected_message = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID + EDITOR_REPLY1 + expected_checksum + SYSEX_END
+        expected_message = (
+            SYSEX_START
+            + MANUFACTURER_ID
+            + [self.device_id]
+            + MODEL_ID
+            + DT1_COMMAND_ID
+            + EDITOR_REPLY1
+            + expected_checksum
+            + SYSEX_END
+        )
         for i in range(len(message)):
             if message[i] != expected_message[i]:
                 return False
@@ -237,7 +254,9 @@ class GT1000:
         if len(message) != 15:
             return False
 
-        expected_message = self.assemble_message(DT1_SYSEX_HEADER, EDITOR_MODE_ADDRESS_SET2 + EDITOR_MODE_ADDESS_VALUE2)
+        expected_message = self.assemble_message(
+            DT1_SYSEX_HEADER, EDITOR_MODE_ADDRESS_SET2 + EDITOR_MODE_ADDESS_VALUE2
+        )
         for i in range(len(message)):
             if message[i] != expected_message[i]:
                 return False
@@ -248,7 +267,16 @@ class GT1000:
             return False
 
         expected_checksum = self.calculate_checksum(EDITOR_REPLY3)
-        expected_message = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID + EDITOR_REPLY3 + expected_checksum + SYSEX_END
+        expected_message = (
+            SYSEX_START
+            + MANUFACTURER_ID
+            + [self.device_id]
+            + MODEL_ID
+            + DT1_COMMAND_ID
+            + EDITOR_REPLY3
+            + expected_checksum
+            + SYSEX_END
+        )
         for i in range(len(message)):
             if message[i] != expected_message[i]:
                 return False
@@ -305,26 +333,39 @@ class GT1000:
             self.current_state_message = 1
             print("identity ok")
             return
-        elif self.current_state_message == 1 and self._msg_editor_command1_reply(message):
+        elif self.current_state_message == 1 and self._msg_editor_command1_reply(
+            message
+        ):
             print("command1 ok")
             self.current_state_message = 2
             return
-        elif self.current_state_message == 2 and self._msg_editor_command2_reply(message):
+        elif self.current_state_message == 2 and self._msg_editor_command2_reply(
+            message
+        ):
             print("command2 ok")
             self.current_state_message = 3
             return
-        elif self.current_state_message == 3 and self._msg_editor_command3_reply(message):
+        elif self.current_state_message == 3 and self._msg_editor_command3_reply(
+            message
+        ):
             print("command3 ok")
             self.current_state_message = 4
             return
-        received_data_header = SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID
+        received_data_header = (
+            SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID
+        )
         for i in range(len(received_data_header)):
             if message[i] != received_data_header[i]:
                 print("Ignored received data")
                 return
-        received_offset = message[len(received_data_header):len(received_data_header)+4]
+        received_offset = message[
+            len(received_data_header) : len(received_data_header) + 4
+        ]
         # The actual data is after the header and before the checksum + SYSEX_END
-        self.received_data = (received_offset, message[len(received_data_header) + 4:-2])
+        self.received_data = (
+            received_offset,
+            message[len(received_data_header) + 4 : -2],
+        )
         print(f"data received: {self.received_data}")
 
     def _construct_address_value(self, start_section, option, setting, param):
