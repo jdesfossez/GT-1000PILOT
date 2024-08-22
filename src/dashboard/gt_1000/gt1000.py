@@ -150,10 +150,17 @@ class GT1000:
         for i in range(port_count):
             if tmp_midi_in.get_port_name(i).startswith(portname):
                 in_portname = tmp_midi_in.get_port_name(i)
+        if in_portname is None:
+            logger.error(f"Failed to find MIDI input port starting with {portname}. Found {tmp_midi_in.get_ports()}")
+
+        if out_portname is None:
+            logger.error(f"Failed to find MIDI output port starting with {portname}. Found {tmp_midi_out.get_ports()}")
         return in_portname, out_portname
 
     def open_ports(self, portname=MIDI_PORT):
         in_portname, out_portname = self._get_midi_exact_port_names(portname)
+        if in_portname is None or out_portname is None:
+            return False
         try:
             self.midi_out, port_name = open_midioutput(out_portname)
         except (EOFError, KeyboardInterrupt):
