@@ -2,7 +2,7 @@ import dash
 from dash import html, dcc, ctx, Input, Output, callback, get_app
 from datetime import datetime
 
-from shared import gt1000, off_color, on_color
+from shared import gt1000, off_color, on_color, logger
 
 dash.register_page(__name__, path="/")
 
@@ -18,7 +18,7 @@ last_action_ts = None
 
 def refresh_all_effects():
     while "fx" not in gt1000.get_state():
-        print("Waiting for pedal state")
+        logger.info("Waiting for pedal state")
         sleep(1)
     current_state = gt1000.get_state()
     # If we clicked on a button but the current_state from the pedal wasn't

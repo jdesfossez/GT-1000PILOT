@@ -1,8 +1,12 @@
 from gt_1000.gt1000 import GT1000
+import logging
 
 
 off_color = "red"
 on_color = "green"
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 gt1000 = GT1000()
 

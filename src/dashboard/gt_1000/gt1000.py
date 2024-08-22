@@ -5,6 +5,7 @@ import rtmidi
 import time
 import sys
 import threading
+import logging
 from time import sleep
 from datetime import datetime
 from rtmidi.midiutil import open_midiinput, open_midioutput
@@ -41,6 +42,13 @@ SLEEP_WAIT_SEC = 0.1
 REFRESH_STATE_POLL_RATE_SEC = 5
 RETRY_COUNT = 100
 
+logging.basicConfig(
+    format="{asctime} - {levelname} - {message}",
+    style="{",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def bytes_to_int(value):
     return int.from_bytes(value, byteorder="big")
@@ -58,7 +66,7 @@ class MidiInputHandler(object):
     def __call__(self, event, gt1000):
         message, deltatime = event
         self._wallclock += deltatime
-        print(f"[%s] @%0.6f %s" % (self.port, self._wallclock, bytes_as_hex(message)))
+        logger.debug(f"[%s] @%0.6f %s" % (self.port, self._wallclock, bytes_as_hex(message)))
         gt1000.process_received_message(message)
 
 
@@ -87,6 +95,7 @@ class GT1000:
             "live_fx3": "patch (temporary patch)",
             "live_fx4": "patch3 (temporary patch)",
         }
+        logger.info("GT1000 instance created")
 
     def start_refresh_thread(self):
         """Background thread to refresh the known device state"""
@@ -98,7 +107,7 @@ class GT1000:
 
     def refresh_state(self):
         with self.state_lock:
-            print("Refresh state")
+            logger.debug("Refresh state")
             self.current_state["fx"] = self.get_all_fx_names_state()
             self.current_state["last_sync_ts"]["fx"] = datetime.now()
 
@@ -120,9 +129,9 @@ class GT1000:
             self.send_message(IDENTITY_REQUEST_MSG)
             sleep(SLEEP_WAIT_SEC)
             if self.device_id is not None:
-                print("Identity received")
+                logger.info("Identity received")
                 return True
-        print("Identity not received, using broadcast")
+        logger.warning("Identity not received, using broadcast")
         self.device_id = DEVICE_ID_BCAST
         return False
 
@@ -145,14 +154,13 @@ class GT1000:
         return self.open_editor_mode()
 
     def _get_fx_name(self, fx_id):
-        print("GET FX NAME", fx_id)
         offset = self._construct_address_value(
                 self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX1 TYPE", None
                 )
         self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         data = self.wait_recv_data(offset)
         if data is None:
-            print(f"_get_fx_name no data for fx {fx_id}")
+            logger.warning(f"_get_fx_name no data for fx {fx_id}")
             return None
         for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
             if data[0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
@@ -162,14 +170,13 @@ class GT1000:
         return None
 
     def _get_fx_state(self, fx_id):
-        print("GET FX STATE", fx_id)
         offset = self._construct_address_value(
                 self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
                 )
         self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         data = self.wait_recv_data(offset)
         if data is None:
-            print(f"_get_fx_bypass no data for fx {fx_id} bypass")
+            logger.warning(f"_get_fx_bypass no data for fx {fx_id} bypass")
             return None
         for i in self.tables["PatchFx"]["FX SW"]["values"]:
             if data[0] == self.tables["PatchFx"]["FX SW"]["values"][i]:
@@ -194,7 +201,6 @@ class GT1000:
         return effects
 
     def fetch_mem(self, offset, length, override_checksum=None):
-        print("FETCH_MEM", offset, length)
         self.send_message(
             self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum),
             offset=offset
@@ -207,12 +213,16 @@ class GT1000:
         self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
         data = self.wait_recv_data()
         data_offset = 0
+        names = []
+        # We would need to iterate over more base offsets to get the whole
+        # list, unused for now but left as an example.
         for i in range(int(len(data[1]) / 16)):
             name = ""
             for j in range(16):
                 name += chr(data[1][data_offset])
                 data_offset += 1
-            print(name)
+            names.append(name)
+        return name
 
     def open_editor_mode(self):
         # Device identification
@@ -252,7 +262,7 @@ class GT1000:
     def send_message(self, message, offset=None):
         with self.data_semaphore:
             self.received_data[str(offset)] = None
-            print(f"sending: {bytes_as_hex(message)}")
+            logger.debug(f"sending: {bytes_as_hex(message)}")
             self.midi_out.send_message(message)
 
     def _build_message(self, header, address_value, override_checksum=None):
@@ -384,40 +394,40 @@ class GT1000:
         else:
             return False
         if software_rev_1 == 0x00 and software_rev_2 == 0x01:
-            print("GT-1000 detected")
+            logger.info("GT-1000 detected")
             self.model = "GT-1000"
         elif software_rev_1 == 0x01 and software_rev_2 == 0x01:
-            print("GT-1000L detected")
+            logger.info("GT-1000L detected")
             self.model = "GT-1000L"
         elif software_rev_1 == 0x02 and software_rev_2 == 0x00:
-            print("GT-1000CORE detected")
+            logger.info("GT-1000CORE detected")
             self.model = "GT-1000CORE"
         self.device_id = device_id
         return True
 
     def process_received_message(self, message):
-        print("receiving")
+        logger.debug("receiving")
         # Process initial handshake as a state machine, the rest is just get/set
         if self.current_state_message is None and self._msg_identity_reply(message):
             self.current_state_message = 1
-            print("identity ok")
+            logger.debug("identity ok")
             return
         elif self.current_state_message == 1 and self._msg_editor_command1_reply(
             message
         ):
-            print("command1 ok")
+            logger.debug("command1 ok")
             self.current_state_message = 2
             return
         elif self.current_state_message == 2 and self._msg_editor_command2_reply(
             message
         ):
-            print("command2 ok")
+            logger.debug("command2 ok")
             self.current_state_message = 3
             return
         elif self.current_state_message == 3 and self._msg_editor_command3_reply(
             message
         ):
-            print("command3 ok")
+            logger.debug("command3 ok")
             self.current_state_message = 4
             return
         received_data_header = (
@@ -425,19 +435,19 @@ class GT1000:
         )
         for i in range(len(received_data_header)):
             if message[i] != received_data_header[i]:
-                print("Ignored received data")
+                logger.debug("Ignored received data")
                 return
         received_offset = message[
             len(received_data_header) : len(received_data_header) + 4
         ]
         # The actual data is after the header and before the checksum + SYSEX_END
         self.received_data[str(received_offset)] = message[len(received_data_header) + 4 : -2]
-        print(f"data received: {self.received_data} for offset {received_offset}")
+        logger.debug(f"data received: {self.received_data} for offset {received_offset}")
 
     def _construct_address_value(self, start_section, option, setting, param):
         # param is the setting we want to set, if None we just contruct the base address
         if start_section not in self.tables["base-addresses"]:
-            print(f"Entry {start_section} missing in base-addresses")
+            logger.error(f"Entry {start_section} missing in base-addresses")
             return None
 
         section_entry = self.tables["base-addresses"][start_section]
@@ -454,7 +464,6 @@ class GT1000:
             num_bytes = (address.bit_length() + 7) // 8
             byte_sequence = address.to_bytes(num_bytes, byteorder="big")
             byte_list = [byte for byte in byte_sequence]
-            print("RETURNING", byte_list)
             return byte_list
 
         param_entry = setting_entry["values"][param]
@@ -464,5 +473,4 @@ class GT1000:
         num_bytes = (address.bit_length() + 7) // 8
         byte_sequence = address.to_bytes(num_bytes, byteorder="big") + value
         byte_list = [byte for byte in byte_sequence]
-        print("RETURNING", byte_list)
         return byte_list
