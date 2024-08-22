@@ -16,8 +16,10 @@ from .constants import (
     MODEL_ID,
     PATCH_NAMES_LEN,
     EDITOR_REPLY1,
-    PATCH_NAMES_BEGIN_OFFSET,
+    EDITOR_REPLY2,
     EDITOR_REPLY3,
+    DEVICE_ID_BCAST,
+    PATCH_NAMES_BEGIN_OFFSET,
     EDITOR_MODE_ADDRESS_FETCH1,
     EDITOR_MODE_ADDRESS_LEN1,
     EDITOR_MODE_ADDRESS_SET2,
@@ -76,7 +78,7 @@ class MidiInputHandler(object):
 class GT1000:
     def __init__(self):
         self.tables = {}
-        self.device_id = None
+        self.device_id = DEVICE_ID_BCAST
         self.current_state_message = None
         self.received_data = {}
         self.data_semaphore = threading.Semaphore(1)
@@ -120,7 +122,10 @@ class GT1000:
 
     def refresh_state_thread(self):
         while not self.stop:
-            time.sleep(REFRESH_STATE_POLL_RATE_SEC)
+            for i in range(10):
+                if self.stop:
+                    return
+                time.sleep(REFRESH_STATE_POLL_RATE_SEC / 10)
             self.refresh_state()
 
     def request_identity(self):
@@ -129,7 +134,7 @@ class GT1000:
         for i in range(RETRY_COUNT):
             self.send_message(IDENTITY_REQUEST_MSG)
             sleep(SLEEP_WAIT_SEC)
-            if self.device_id is not None:
+            if self.device_id != DEVICE_ID_BCAST:
                 logger.info(
                     f"Identity received: {self.device_id} ({hex(self.device_id)})"
                 )
@@ -137,7 +142,6 @@ class GT1000:
         logger.warning(
             f"Identity not received, using broadcast {self.device_id} ({hex(self.device_id)})"
         )
-        self.device_id = DEVICE_ID_BCAST
         return False
 
     def _get_midi_exact_port_names(self, portname):
@@ -190,8 +194,7 @@ class GT1000:
             "FX1 TYPE",
             None,
         )
-        self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
-        data = self.wait_recv_data(offset)
+        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         if data is None:
             logger.warning(f"_get_fx_name no data for fx {fx_id}")
             return None
@@ -206,8 +209,7 @@ class GT1000:
         offset = self._construct_address_value(
             self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
         )
-        self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
-        data = self.wait_recv_data(offset)
+        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         if data is None:
             logger.warning(f"_get_fx_bypass no data for fx {fx_id} bypass")
             return None
@@ -222,6 +224,7 @@ class GT1000:
         return {"fx_id": fx_id, "name": name, "state": state}
 
     def get_all_fx_names_state(self):
+        logger.debug("get_all_fx_names_state")
         if self.model == "GT-1000CORE":
             nr_fx = 3
         else:
@@ -238,13 +241,13 @@ class GT1000:
             self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum),
             offset=offset,
         )
+        return self.wait_recv_data(offset)
 
     def set_byte(self, offset, data):
-        self.send_message(self.assemble_message(DT1_SYSEX_HEADER, offset + data))
+        self.send_message(self.assemble_message(DT1_SYSEX_HEADER, offset + data), offset)
 
     def fetch_patch_names(self):
-        self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
-        data = self.wait_recv_data()
+        data = self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
         data_offset = 0
         names = []
         # We would need to iterate over more base offsets to get the whole
@@ -267,17 +270,21 @@ class GT1000:
         # device is responsive.
 
         # FIXME we don't compute the right checksum here for some reason, but the others are good
-        self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH1, EDITOR_MODE_ADDRESS_LEN1, [0])
-        if not self.wait_state_change(2):
+        data = self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH1, EDITOR_MODE_ADDRESS_LEN1, [0])
+        if data != EDITOR_REPLY1:
             return False
+        logger.debug("command1 ok")
 
         self.set_byte(EDITOR_MODE_ADDRESS_SET2, EDITOR_MODE_ADDESS_VALUE2)
-        if not self.wait_state_change(3):
+        data = self.wait_recv_data(EDITOR_MODE_ADDRESS_SET2)
+        if data != EDITOR_REPLY2:
             return False
+        logger.debug("command2 ok")
 
-        self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH3, EDITOR_MODE_ADDRESS_LEN3)
-        if not self.wait_state_change(4):
+        data = self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH3, EDITOR_MODE_ADDRESS_LEN3)
+        if data != EDITOR_REPLY3:
             return False
+        logger.debug("command3 ok")
         logger.info("Device opened in editor mode")
         return True
 
@@ -330,13 +337,6 @@ class GT1000:
             self.build_rq_message(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)
         )
 
-    def wait_state_change(self, expected_state):
-        for i in range(RETRY_COUNT):
-            if self.current_state_message == expected_state:
-                return True
-            sleep(SLEEP_WAIT_SEC)
-        return False
-
     def wait_recv_data(self, offset=None):
         for i in range(RETRY_COUNT):
             with self.data_semaphore:
@@ -344,60 +344,6 @@ class GT1000:
                     return self.received_data[str(offset)]
             sleep(SLEEP_WAIT_SEC)
         return None
-
-    def _msg_editor_command1_reply(self, message):
-        if len(message) != 15:
-            return False
-
-        # FIXME: again here we compute 0x80 but expect 0x79
-        # expected_checksum = self.calculate_checksum(EDITOR_MODE_COMMAND1)
-        expected_checksum = [0x79]
-        expected_message = (
-            SYSEX_START
-            + MANUFACTURER_ID
-            + [self.device_id]
-            + MODEL_ID
-            + DT1_COMMAND_ID
-            + EDITOR_REPLY1
-            + expected_checksum
-            + SYSEX_END
-        )
-        for i in range(len(message)):
-            if message[i] != expected_message[i]:
-                return False
-        return True
-
-    def _msg_editor_command2_reply(self, message):
-        if len(message) != 15:
-            return False
-
-        expected_message = self.assemble_message(
-            DT1_SYSEX_HEADER, EDITOR_MODE_ADDRESS_SET2 + EDITOR_MODE_ADDESS_VALUE2
-        )
-        for i in range(len(message)):
-            if message[i] != expected_message[i]:
-                return False
-        return True
-
-    def _msg_editor_command3_reply(self, message):
-        if len(message) != 15:
-            return False
-
-        expected_checksum = self.calculate_checksum(EDITOR_REPLY3)
-        expected_message = (
-            SYSEX_START
-            + MANUFACTURER_ID
-            + [self.device_id]
-            + MODEL_ID
-            + DT1_COMMAND_ID
-            + EDITOR_REPLY3
-            + expected_checksum
-            + SYSEX_END
-        )
-        for i in range(len(message)):
-            if message[i] != expected_message[i]:
-                return False
-        return True
 
     def _msg_identity_reply(self, message):
         # Byte Explanation
@@ -445,28 +391,8 @@ class GT1000:
 
     def process_received_message(self, message):
         logger.debug("receiving")
-        # Process initial handshake as a state machine, the rest is just get/set
-        if self.current_state_message is None and self._msg_identity_reply(message):
-            self.current_state_message = 1
+        if self.device_id == DEVICE_ID_BCAST and self._msg_identity_reply(message):
             logger.debug("identity ok")
-            return
-        elif self.current_state_message == 1 and self._msg_editor_command1_reply(
-            message
-        ):
-            logger.debug("command1 ok")
-            self.current_state_message = 2
-            return
-        elif self.current_state_message == 2 and self._msg_editor_command2_reply(
-            message
-        ):
-            logger.debug("command2 ok")
-            self.current_state_message = 3
-            return
-        elif self.current_state_message == 3 and self._msg_editor_command3_reply(
-            message
-        ):
-            logger.debug("command3 ok")
-            self.current_state_message = 4
             return
         received_data_header = (
             SYSEX_START + MANUFACTURER_ID + [self.device_id] + MODEL_ID + DT1_COMMAND_ID
@@ -483,7 +409,7 @@ class GT1000:
             len(received_data_header) + 4 : -2
         ]
         logger.debug(
-            f"data received: {self.received_data} for offset {received_offset}"
+            f"data received: {self.received_data[str(received_offset)]} for offset {received_offset}"
         )
 
     def _construct_address_value(self, start_section, option, setting, param):
