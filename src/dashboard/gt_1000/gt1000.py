@@ -37,7 +37,7 @@ from .constants import (
     DEVICE_ID_BCAST,
 )
 
-MIDI_PORT = "GT-1000:GT-1000 MIDI 1 28:0"
+MIDI_PORT = "GT-1000:GT-1000 MIDI 1"
 SLEEP_WAIT_SEC = 0.1
 REFRESH_STATE_POLL_RATE_SEC = 5
 RETRY_COUNT = 100
@@ -135,11 +135,25 @@ class GT1000:
         self.device_id = DEVICE_ID_BCAST
         return False
 
-    def open_ports(
-        self,
-        in_portname=MIDI_PORT,
-        out_portname=MIDI_PORT,
-    ):
+    def _get_midi_exact_port_names(self, portname):
+        """The portname usually contains an ID that can change depending on the other devices"""
+        tmp_midi_out = rtmidi.MidiOut()
+        port_count = tmp_midi_out.get_port_count()
+        out_portname = None
+        for i in range(port_count):
+            if tmp_midi_out.get_port_name(i).startswith(portname):
+                out_portname = tmp_midi_out.get_port_name(i)
+
+        tmp_midi_in = rtmidi.MidiIn()
+        port_count = tmp_midi_in.get_port_count()
+        in_portname = None
+        for i in range(port_count):
+            if tmp_midi_in.get_port_name(i).startswith(portname):
+                in_portname = tmp_midi_in.get_port_name(i)
+        return in_portname, out_portname
+
+    def open_ports(self, portname=MIDI_PORT):
+        in_portname, out_portname = self._get_midi_exact_port_names(portname)
         try:
             self.midi_out, port_name = open_midioutput(out_portname)
         except (EOFError, KeyboardInterrupt):
