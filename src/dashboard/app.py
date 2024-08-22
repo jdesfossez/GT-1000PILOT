@@ -2,10 +2,9 @@ from callbacks import register_callbacks
 from dash import Dash, Input, Output, html, dcc, ctx  # type: ignore
 import dash
 from gt_1000.gt1000 import GT1000
+from shared import gt1000, open_gt1000
 
-gt1000 = GT1000()
-# gt1000.open_ports()
-
+open_gt1000()
 app = Dash(__name__, use_pages=True, pages_folder="pages")
 
 # app.layout = html.Div([

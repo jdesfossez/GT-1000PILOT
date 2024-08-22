@@ -33,6 +33,7 @@ from .constants import (
     DEVICE_ID_BCAST,
 )
 
+MIDI_PORT = "GT-1000:GT-1000 MIDI 1 28:0"
 SLEEP_WAIT_SEC = 0.1
 RETRY_COUNT = 100
 
@@ -99,8 +100,8 @@ class GT1000:
 
     def open_ports(
         self,
-        in_portname="GT-1000:GT-1000 MIDI 1 24:0",
-        out_portname="GT-1000:GT-1000 MIDI 1 24:0",
+        in_portname=MIDI_PORT,
+        out_portname=MIDI_PORT,
     ):
         try:
             self.midi_out, port_name = open_midioutput(out_portname)
@@ -111,8 +112,7 @@ class GT1000:
             self.midi_in, port_name = open_midiinput(in_portname)
         except (EOFError, KeyboardInterrupt):
             return False
-        # not sure if active_sense is useful yet
-        self.midi_in.ignore_types(sysex=False, active_sense=False)
+        self.midi_in.ignore_types(sysex=False)
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
@@ -127,6 +127,53 @@ class GT1000:
         for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
             if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
                 print(i)
+
+    def _get_fx_name(self, fx_id):
+        self.fetch_mem(
+                self._construct_address_value(
+                    self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX1 TYPE", None
+                    ),
+                [0x0, 0x0, 0x0, 0x1],
+                )
+        data = self.wait_recv_data()
+        if data is None:
+            print(f"_get_fx_name no data for fx {fx_id}")
+            return "unknown"
+        for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
+            if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
+                return i
+
+    def _get_fx_state(self, fx_id):
+        self.fetch_mem(
+                self._construct_address_value(
+                    self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
+                    ),
+                [0x0, 0x0, 0x0, 0x1],
+                )
+        data = self.wait_recv_data()
+        if data is None:
+            print(f"_get_fx_bypass no data for fx {fx_id} bypass")
+            return "unknown"
+        for i in self.tables["PatchFx"]["FX SW"]["values"]:
+            if data[1][0] == self.tables["PatchFx"]["FX SW"]["values"][i]:
+                return i
+
+    def get_one_fx_name_state(self, fx_id):
+        name = self._get_fx_name(fx_id)
+        state = self._get_fx_state(fx_id)
+        return {"fx_id": fx_id, "name": name, "state": state}
+
+    def get_all_fx_names_state(self):
+        if self.model == "GT-1000CORE":
+            nr_fx = 3
+        else:
+            nr_fx = 4
+
+        effects = []
+        for i in range(nr_fx):
+            fx_id = i+1
+            effects.append(self.get_one_fx_name_state(fx_id))
+        return effects
 
     def fetch_mem(self, offset, length, override_checksum=None):
         self.send_message(
@@ -152,6 +199,7 @@ class GT1000:
         if not self.request_identity():
             return False
         # FIXME we don't compute the right checksum here for some reason, but the others are good
+        # TODO, all of that is not useful, just the SET should be enough
         self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH1, EDITOR_MODE_ADDRESS_LEN1, [0])
         if not self.wait_state_change(2):
             return False
