@@ -4,7 +4,9 @@ import dash
 from gt_1000.gt1000 import GT1000
 from shared import gt1000, open_gt1000
 
-open_gt1000()
+if not open_gt1000():
+    print("Failed to open GT1000 communication")
+
 app = Dash(__name__, use_pages=True, pages_folder="pages")
 
 # app.layout = html.Div([
@@ -81,3 +83,4 @@ app.layout = html.Div(
 
 if __name__ == "__main__":
     app.run_server(debug=True, host="0.0.0.0")
+    gt1000.stop_refresh_thread()

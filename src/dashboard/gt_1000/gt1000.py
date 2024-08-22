@@ -3,7 +3,10 @@
 import json
 import rtmidi
 import time
+import sys
+import threading
 from time import sleep
+from datetime import datetime
 from rtmidi.midiutil import open_midiinput, open_midioutput
 from pathlib import Path
 
@@ -35,6 +38,7 @@ from .constants import (
 
 MIDI_PORT = "GT-1000:GT-1000 MIDI 1 28:0"
 SLEEP_WAIT_SEC = 0.1
+REFRESH_STATE_POLL_RATE_SEC = 5
 RETRY_COUNT = 100
 
 
@@ -63,7 +67,15 @@ class GT1000:
         self.tables = {}
         self.device_id = None
         self.current_state_message = None
-        self.received_data = None
+        self.received_data = {}
+        self.data_semaphore = threading.Semaphore(1)
+        self.stop = False
+
+        # Protect current_state and prevent state changes while refreshing
+        self.state_lock = threading.Semaphore(1)
+        # The known state of the effects
+        self.current_state = {"last_sync_ts": {}}
+
         for i in (Path(__file__).parent / "specs").glob("*.json"):
             table_name = i.name.split(".")[0]
             self.tables[table_name] = json.loads(i.read_text())
@@ -76,14 +88,30 @@ class GT1000:
             "live_fx4": "patch3 (temporary patch)",
         }
 
-    #        msg = self.build_dt_message(
-    #            self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", "DEFRETTER"
-    #        )
-    #        print_has_hex(msg)
-    #        msg = self.build_dt_message(
-    #            self.base_address_pointers["live_fx3"], "fx3", "FX1 TYPE", "FLANGER"
-    #        )
-    #        print_has_hex(msg)
+    def start_refresh_thread(self):
+        """Background thread to refresh the known device state"""
+        self.refresh_thread = threading.Thread(target=self.refresh_state_thread)
+        self.refresh_thread.start()
+
+    def stop_refresh_thread(self):
+        self.stop = True
+
+    def refresh_state(self):
+        with self.state_lock:
+            print("Refresh state")
+            self.current_state["fx"] = self.get_all_fx_names_state()
+            self.current_state["last_sync_ts"]["fx"] = datetime.now()
+
+    def get_state(self):
+        with self.state_lock:
+            return self.current_state
+
+    def refresh_state_thread(self):
+        while not self.stop:
+            time.sleep(REFRESH_STATE_POLL_RATE_SEC)
+            self.refresh_state()
+
+
 
     def request_identity(self):
         # TODO: this should be a background thread so we update the ID if the
@@ -116,47 +144,37 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
-    def get_fx1(self):
-        self.fetch_mem(
-            self._construct_address_value(
-                self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", None
-            ),
-            [0x0, 0x0, 0x0, 0x2],
-        )
-        data = self.wait_recv_data()
-        for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
-            if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
-                print(i)
-
     def _get_fx_name(self, fx_id):
-        self.fetch_mem(
-                self._construct_address_value(
-                    self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX1 TYPE", None
-                    ),
-                [0x0, 0x0, 0x0, 0x1],
+        print("GET FX NAME", fx_id)
+        offset = self._construct_address_value(
+                self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX1 TYPE", None
                 )
-        data = self.wait_recv_data()
+        self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
+        data = self.wait_recv_data(offset)
         if data is None:
             print(f"_get_fx_name no data for fx {fx_id}")
-            return "unknown"
+            return None
         for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
-            if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
+            if data[0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
+                if i == "AC RESONANCE":
+                    xxx
                 return i
+        return None
 
     def _get_fx_state(self, fx_id):
-        self.fetch_mem(
-                self._construct_address_value(
-                    self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
-                    ),
-                [0x0, 0x0, 0x0, 0x1],
+        print("GET FX STATE", fx_id)
+        offset = self._construct_address_value(
+                self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
                 )
-        data = self.wait_recv_data()
+        self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
+        data = self.wait_recv_data(offset)
         if data is None:
             print(f"_get_fx_bypass no data for fx {fx_id} bypass")
-            return "unknown"
+            return None
         for i in self.tables["PatchFx"]["FX SW"]["values"]:
-            if data[1][0] == self.tables["PatchFx"]["FX SW"]["values"][i]:
+            if data[0] == self.tables["PatchFx"]["FX SW"]["values"][i]:
                 return i
+        return None
 
     def get_one_fx_name_state(self, fx_id):
         name = self._get_fx_name(fx_id)
@@ -176,8 +194,10 @@ class GT1000:
         return effects
 
     def fetch_mem(self, offset, length, override_checksum=None):
+        print("FETCH_MEM", offset, length)
         self.send_message(
-            self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum)
+            self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum),
+            offset=offset
         )
 
     def set_byte(self, offset, data):
@@ -229,11 +249,11 @@ class GT1000:
         )
         return msg
 
-    def send_message(self, message):
-        # This whole thing is racy, but there is no real solution here
-        self.received_data = None
-        print(f"sending: {bytes_as_hex(message)}")
-        self.midi_out.send_message(message)
+    def send_message(self, message, offset=None):
+        with self.data_semaphore:
+            self.received_data[str(offset)] = None
+            print(f"sending: {bytes_as_hex(message)}")
+            self.midi_out.send_message(message)
 
     def _build_message(self, header, address_value, override_checksum=None):
         if override_checksum is not None:
@@ -269,10 +289,11 @@ class GT1000:
             sleep(SLEEP_WAIT_SEC)
         return False
 
-    def wait_recv_data(self):
+    def wait_recv_data(self, offset=None):
         for i in range(RETRY_COUNT):
-            if self.received_data is not None:
-                return self.received_data
+            with self.data_semaphore:
+                if self.received_data[str(offset)] is not None:
+                    return self.received_data[str(offset)]
             sleep(SLEEP_WAIT_SEC)
         return None
 
@@ -410,11 +431,8 @@ class GT1000:
             len(received_data_header) : len(received_data_header) + 4
         ]
         # The actual data is after the header and before the checksum + SYSEX_END
-        self.received_data = (
-            received_offset,
-            message[len(received_data_header) + 4 : -2],
-        )
-        print(f"data received: {self.received_data}")
+        self.received_data[str(received_offset)] = message[len(received_data_header) + 4 : -2]
+        print(f"data received: {self.received_data} for offset {received_offset}")
 
     def _construct_address_value(self, start_section, option, setting, param):
         # param is the setting we want to set, if None we just contruct the base address
@@ -436,6 +454,7 @@ class GT1000:
             num_bytes = (address.bit_length() + 7) // 8
             byte_sequence = address.to_bytes(num_bytes, byteorder="big")
             byte_list = [byte for byte in byte_sequence]
+            print("RETURNING", byte_list)
             return byte_list
 
         param_entry = setting_entry["values"][param]
@@ -445,7 +464,5 @@ class GT1000:
         num_bytes = (address.bit_length() + 7) // 8
         byte_sequence = address.to_bytes(num_bytes, byteorder="big") + value
         byte_list = [byte for byte in byte_sequence]
+        print("RETURNING", byte_list)
         return byte_list
-
-
-g = GT1000()
