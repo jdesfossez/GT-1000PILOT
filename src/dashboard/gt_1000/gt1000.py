@@ -366,6 +366,7 @@ class GT1000:
         if (
             message[0] == SYSEX_START[0]
             and message[1] == NON_RT_MSG[0]
+            # message[2] is the identity
             and message[3] == GEN_INFO[0]
             and message[4] == IDENTITY_REPLY[0]
             and message[5] == MANUFACTURER_ID[0]
