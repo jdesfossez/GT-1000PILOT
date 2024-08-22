@@ -50,6 +50,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
+
 def bytes_to_int(value):
     return int.from_bytes(value, byteorder="big")
 
@@ -66,7 +67,9 @@ class MidiInputHandler(object):
     def __call__(self, event, gt1000):
         message, deltatime = event
         self._wallclock += deltatime
-        logger.debug(f"[%s] @%0.6f %s" % (self.port, self._wallclock, bytes_as_hex(message)))
+        logger.debug(
+            f"[%s] @%0.6f %s" % (self.port, self._wallclock, bytes_as_hex(message))
+        )
         gt1000.process_received_message(message)
 
 
@@ -120,8 +123,6 @@ class GT1000:
             time.sleep(REFRESH_STATE_POLL_RATE_SEC)
             self.refresh_state()
 
-
-
     def request_identity(self):
         # TODO: this should be a background thread so we update the ID if the
         # device comes online at some point
@@ -151,10 +152,14 @@ class GT1000:
             if tmp_midi_in.get_port_name(i).startswith(portname):
                 in_portname = tmp_midi_in.get_port_name(i)
         if in_portname is None:
-            logger.error(f"Failed to find MIDI input port starting with {portname}. Found {tmp_midi_in.get_ports()}")
+            logger.error(
+                f"Failed to find MIDI input port starting with {portname}. Found {tmp_midi_in.get_ports()}"
+            )
 
         if out_portname is None:
-            logger.error(f"Failed to find MIDI output port starting with {portname}. Found {tmp_midi_out.get_ports()}")
+            logger.error(
+                f"Failed to find MIDI output port starting with {portname}. Found {tmp_midi_out.get_ports()}"
+            )
         return in_portname, out_portname
 
     def open_ports(self, portname=MIDI_PORT):
@@ -176,8 +181,11 @@ class GT1000:
 
     def _get_fx_name(self, fx_id):
         offset = self._construct_address_value(
-                self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX1 TYPE", None
-                )
+            self.base_address_pointers[f"live_fx{fx_id}"],
+            f"fx{fx_id}",
+            "FX1 TYPE",
+            None,
+        )
         self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         data = self.wait_recv_data(offset)
         if data is None:
@@ -192,8 +200,8 @@ class GT1000:
 
     def _get_fx_state(self, fx_id):
         offset = self._construct_address_value(
-                self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
-                )
+            self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
+        )
         self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         data = self.wait_recv_data(offset)
         if data is None:
@@ -217,14 +225,14 @@ class GT1000:
 
         effects = []
         for i in range(nr_fx):
-            fx_id = i+1
+            fx_id = i + 1
             effects.append(self.get_one_fx_name_state(fx_id))
         return effects
 
     def fetch_mem(self, offset, length, override_checksum=None):
         self.send_message(
             self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum),
-            offset=offset
+            offset=offset,
         )
 
     def set_byte(self, offset, data):
@@ -462,8 +470,12 @@ class GT1000:
             len(received_data_header) : len(received_data_header) + 4
         ]
         # The actual data is after the header and before the checksum + SYSEX_END
-        self.received_data[str(received_offset)] = message[len(received_data_header) + 4 : -2]
-        logger.debug(f"data received: {self.received_data} for offset {received_offset}")
+        self.received_data[str(received_offset)] = message[
+            len(received_data_header) + 4 : -2
+        ]
+        logger.debug(
+            f"data received: {self.received_data} for offset {received_offset}"
+        )
 
     def _construct_address_value(self, start_section, option, setting, param):
         # param is the setting we want to set, if None we just contruct the base address

@@ -10,6 +10,7 @@ logger.setLevel(logging.INFO)
 
 gt1000 = GT1000()
 
+
 def open_gt1000():
     if not gt1000.open_ports():
         return False

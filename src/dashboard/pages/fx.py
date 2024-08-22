@@ -16,6 +16,7 @@ else:
 current_buttons = None
 last_action_ts = None
 
+
 def refresh_all_effects():
     while "fx" not in gt1000.get_state():
         logger.info("Waiting for pedal state")
@@ -33,64 +34,66 @@ def refresh_all_effects():
             gt1000.dash_effects[i]["color"] = on_color
 
 
-
 def generate_buttons():
     global current_buttons
     current_buttons = html.Div(
-            children=[
-                html.Button(
-                    id=f"toggle_fx{n}",
-                    children=[
-                        dcc.Loading(
-                            html.Div(
-                                children=[
-                                    html.Img(
-                                        src="/assets/stompbox.png",
-                                        width="80%",
-                                        height="80%",
-                                        ),
-                                    html.H2(
-                                        id=f"fx{n}_name",
-                                        children=gt1000.dash_effects[n - 1]["name"],
-                                        ),
-                                    ],
-                                style={"color": "black"},
-                                )
-                            )
-                        ],
-                    n_clicks=0,
-                    style={"backgroundColor": gt1000.dash_effects[n - 1]["color"]},
+        children=[
+            html.Button(
+                id=f"toggle_fx{n}",
+                children=[
+                    dcc.Loading(
+                        html.Div(
+                            children=[
+                                html.Img(
+                                    src="/assets/stompbox.png",
+                                    width="80%",
+                                    height="80%",
+                                ),
+                                html.H2(
+                                    id=f"fx{n}_name",
+                                    children=gt1000.dash_effects[n - 1]["name"],
+                                ),
+                            ],
+                            style={"color": "black"},
+                        )
                     )
-                for n in range(1, nr_fx + 1)
                 ],
-            style={
-                "display": "grid",
-                "grid-template-columns": f"repeat({nr_fx}, 1fr)",
-                "width": "100vw",
-                "height": "80vh",
-                "gap": "0",
-                },
+                n_clicks=0,
+                style={"backgroundColor": gt1000.dash_effects[n - 1]["color"]},
             )
+            for n in range(1, nr_fx + 1)
+        ],
+        style={
+            "display": "grid",
+            "grid-template-columns": f"repeat({nr_fx}, 1fr)",
+            "width": "100vw",
+            "height": "80vh",
+            "gap": "0",
+        },
+    )
     return current_buttons
+
 
 def serve_layout():
     refresh_all_effects()
     return html.Div(
-            id="button-grid",
-            children=[
-                dcc.Interval(
-                    id="interval-component",
-                    interval=2 * 1000,  # in milliseconds
-                    n_intervals=0,
-                    ),
-                html.Div(id="buttons", children=generate_buttons()),
-                ],
-            )
+        id="button-grid",
+        children=[
+            dcc.Interval(
+                id="interval-component",
+                interval=2 * 1000,  # in milliseconds
+                n_intervals=0,
+            ),
+            html.Div(id="buttons", children=generate_buttons()),
+        ],
+    )
 
-@callback(Output('buttons', 'children'), Input('interval-component', 'n_intervals'))
+
+@callback(Output("buttons", "children"), Input("interval-component", "n_intervals"))
 def update_metrics(n):
     refresh_all_effects()
     return generate_buttons()
+
 
 def register_callbacks(app):
     for n in range(1, nr_fx + 1):
