@@ -117,6 +117,13 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
+    def get_fx1(self):
+        self.fetch_mem(self._construct_address_value(self.base_address_pointers["live_fx1"], "fx1", "FX1 TYPE", None), [0x0, 0x0, 0x0, 0x2])
+        data = self.wait_recv_data()
+        for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
+            if data[1][0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
+                print(i)
+
     def fetch_mem(self, offset, length, override_checksum=None):
         self.send_message(self.assemble_message(RQ1_SYSEX_HEADER, offset + length, override_checksum))
 
@@ -321,6 +328,7 @@ class GT1000:
         print(f"data received: {self.received_data}")
 
     def _construct_address_value(self, start_section, option, setting, param):
+        # param is the setting we want to set, if None we just contruct the base address
         if start_section not in self.tables["base-addresses"]:
             print(f"Entry {start_section} missing in base-addresses")
             return None
@@ -334,9 +342,15 @@ class GT1000:
         setting_entry = self.tables[option_entry["table"]][setting]
         setting_address_offset = bytes_to_int(setting_entry["offset"])
 
+        address += option_address_offset + setting_address_offset
+        if param is None:
+            num_bytes = (address.bit_length() + 7) // 8
+            byte_sequence = address.to_bytes(num_bytes, byteorder="big")
+            byte_list = [byte for byte in byte_sequence]
+            return byte_list
+
         param_entry = setting_entry["values"][param]
 
-        address += option_address_offset + setting_address_offset
         value = param_entry.to_bytes(1, byteorder="big")
 
         num_bytes = (address.bit_length() + 7) // 8
