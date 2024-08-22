@@ -130,9 +130,13 @@ class GT1000:
             self.send_message(IDENTITY_REQUEST_MSG)
             sleep(SLEEP_WAIT_SEC)
             if self.device_id is not None:
-                logger.info("Identity received")
+                logger.info(
+                    f"Identity received: {self.device_id} ({hex(self.device_id)})"
+                )
                 return True
-        logger.warning("Identity not received, using broadcast")
+        logger.warning(
+            f"Identity not received, using broadcast {self.device_id} ({hex(self.device_id)})"
+        )
         self.device_id = DEVICE_ID_BCAST
         return False
 
@@ -254,11 +258,15 @@ class GT1000:
         return name
 
     def open_editor_mode(self):
+        logger.info("Opening device in editor mode")
         # Device identification
         if not self.request_identity():
             return False
+        # The 2 fetch operations here may break if the value returned changes at some point.
+        # Not sure what is the point of those, it looks like a simple check to make sure the
+        # device is responsive.
+
         # FIXME we don't compute the right checksum here for some reason, but the others are good
-        # TODO, all of that is not useful, just the SET should be enough
         self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH1, EDITOR_MODE_ADDRESS_LEN1, [0])
         if not self.wait_state_change(2):
             return False
@@ -270,6 +278,7 @@ class GT1000:
         self.fetch_mem(EDITOR_MODE_ADDRESS_FETCH3, EDITOR_MODE_ADDRESS_LEN3)
         if not self.wait_state_change(4):
             return False
+        logger.info("Device opened in editor mode")
         return True
 
     def calculate_checksum(self, data):
