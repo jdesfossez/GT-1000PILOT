@@ -2,8 +2,11 @@ from gt_1000.gt1000 import GT1000
 import logging
 
 
-off_color = "red"
-on_color = "green"
+menu_color1 = "#ABBACC"
+menu_color2 = "#C1C9CB"
+off_color = "#F2E9D8"
+on_color = "#2D8C2A"
+
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)

@@ -2,7 +2,7 @@ from callbacks import register_callbacks
 from dash import Dash, Input, Output, html, dcc, ctx  # type: ignore
 import dash
 from gt_1000.gt1000 import GT1000
-from shared import gt1000, open_gt1000, logger
+from shared import gt1000, open_gt1000, logger, menu_color1, menu_color2
 from time import sleep
 
 while not open_gt1000():
@@ -18,19 +18,19 @@ app.layout = html.Div(
             children=[
                 dcc.Link(
                     id=f"page_{page['name']}",
-                    children=page["name"],
+                    children=page["name"].upper(),
                     href=page["relative_path"],
                     style={
-                        "backgroundColor": "green",
+                        "backgroundColor": menu_color1 if i % 2 == 0 else menu_color2,
                         "display": "flex",
                         "justify-content": "center",
                         "align-items": "center",
                         "height": "100%",
                         "textDecoration": "none",
-                        "color": "white",
+                        "color": "black",
                     },
                 )
-                for page in dash.page_registry.values()
+                for i, page in enumerate(dash.page_registry.values())
             ],
             style={
                 "display": "grid",
@@ -41,7 +41,18 @@ app.layout = html.Div(
             },
         ),
         html.Div(
-            children=[dash.page_container],
+            children=[
+                html.Div(
+                    children=[dash.page_container],
+                    style={
+                        "display": "flex",
+                        "flex-direction": "column",
+                        "flex-grow": "1",
+                        "max-height": "80vh",  # Limit height to 80% of the viewport height
+                        "overflow": "hidden",  # Prevent overflow issues
+                    },
+                )
+            ],
             style={
                 "flex": "1",  # Allows this div to grow and fill the remaining space
                 "width": "100vw",
