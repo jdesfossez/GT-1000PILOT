@@ -13,6 +13,7 @@ from pathlib import Path
 
 from .constants import (
     SYSEX_END,
+    EQ_COUNT,
     MODEL_ID,
     PATCH_NAMES_LEN,
     EDITOR_REPLY1,
@@ -100,7 +101,7 @@ class GT1000:
             "live_fx3": "patch (temporary patch)",
             "live_fx4": "patch3 (temporary patch)",
         }
-        logger.info("GT1000 instance created")
+        logger.info(f"GT1000 instance created {self}")
 
     def start_refresh_thread(self):
         """Background thread to refresh the known device state"""
@@ -111,10 +112,14 @@ class GT1000:
         self.stop = True
 
     def refresh_state(self):
-        with self.state_lock:
-            logger.debug("Refresh state")
-            self.current_state["fx"] = self.get_all_fx_names_state()
-            self.current_state["last_sync_ts"]["fx"] = datetime.now()
+        refresh_fn = {"eq": self.get_all_eq_states,
+                      "fx": self.get_all_fx_names_state,
+                      }
+        for state_key in refresh_fn:
+            logger.debug(f"Refresh state for {state_key}")
+            with self.state_lock:
+                self.current_state[state_key] = refresh_fn[state_key]()
+                self.current_state["last_sync_ts"][state_key] = datetime.now()
 
     def get_state(self):
         with self.state_lock:
@@ -187,6 +192,7 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
+
     def _get_fx_name(self, fx_id):
         offset = self._construct_address_value(
             self.base_address_pointers[f"live_fx{fx_id}"],
@@ -200,8 +206,6 @@ class GT1000:
             return None
         for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
             if data[0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
-                if i == "AC RESONANCE":
-                    xxx
                 return i
         return None
 
@@ -235,6 +239,32 @@ class GT1000:
             fx_id = i + 1
             effects.append(self.get_one_fx_name_state(fx_id))
         return effects
+
+
+    def _get_one_eq_state(self, eq_id):
+        offset = self._construct_address_value(
+                "patch (temporary patch)",
+                f"eq{eq_id}",
+                "SW",
+                None
+                )
+        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
+        if data is None:
+            logger.warning(f"__get_one_eq_state no data for eq {eq_id}")
+            return None
+        state = None
+        for i in self.tables["PatchEq"]["SW"]["values"]:
+            if data[0] == self.tables["PatchEq"]["SW"]["values"][i]:
+                state = i
+        return {"eq_id": eq_id, "state": state}
+
+    def get_all_eq_states(self):
+        logger.debug("get_all_eq_state")
+        out = []
+        for i in range(EQ_COUNT):
+            eq_id = i + 1
+            out.append(self._get_one_eq_state(eq_id))
+        return out
 
     def fetch_mem(self, offset, length, override_checksum=None):
         self.send_message(
@@ -393,7 +423,7 @@ class GT1000:
         return True
 
     def process_received_message(self, message):
-        logger.debug("receiving")
+        # logger.debug("receiving")
         if self.device_id == DEVICE_ID_BCAST and self._msg_identity_reply(message):
             logger.debug("identity ok")
             return
@@ -402,7 +432,7 @@ class GT1000:
         )
         for i in range(len(received_data_header)):
             if message[i] != received_data_header[i]:
-                logger.debug("Ignored received data")
+                # logger.debug("Ignored received data")
                 return
         received_offset = message[
             len(received_data_header) : len(received_data_header) + 4
