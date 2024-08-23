@@ -10,6 +10,20 @@ def parse_value_range(value_range_str):
     value_range = [int(x) for x in value_range_str.strip("()").split("-")]
     return value_range
 
+# FIXME: delay ranges are weird: you get a range and then names:
+# 1ms - 2000ms, 32ndNote, Triplet16thNote, [...]
+# so we need to expand to:
+# 1ms, 2ms, [...], 2000ms, 32ndNote, Triplet16thNote, [...]
+def expand_range(begin, end, unit, divide=1):
+    all_names = "| | | "
+    for i in range(begin, end+ 1):
+        if divide != 1:
+            value = i/divide
+        else:
+            value = i
+        all_names += (f"{value}{unit}, ")
+    all_names += "|"
+    return all_names
 
 def process_data(lines):
     result = {}
@@ -22,11 +36,22 @@ def process_data(lines):
         line = line.strip()
 
         print(line)
-
+        # FIXME: these are offsets that span multiple bytes, need to find a solution
+        if line.startswith("|# "):
+            continue
         if current_name and line.startswith("| | |"):
             # EQ range is not written as a CSV list, fix it manually here
             if line == "| | | -20 - 0 - +20 [dB] |":
-                line = "| | | -20dB, -19dB, -18dB, -17dB, -16dB, -15dB, -14dB, -13dB, -12dB, -11dB, -10dB, -9dB, -8dB, -7dB, -6dB, -5dB, -4dB, -3dB, -2dB, -1dB, +0dB, +1dB, +2dB, +3dB, +4dB, +5dB, +6dB, +7dB, +8dB, +9dB, +10dB, +11dB, +12dB, +13dB, +14dB, +15dB, +16dB, +17dB, +18dB, +19dB, +20dB |"
+                line = expand_range(-20, 20, "dB")
+            elif line == "| | | -50 - 50 |":
+                line = expand_range(-50, 50, "")
+            elif line == "| | | -10 - 10 |":
+                line = expand_range(-10, 10, "")
+            elif line == "| | | 0.1s, 0.2s - 10.0s |":
+                line = expand_range(1, 100, "s", divide=10)
+            # PRE DELAY in Reverb only has the unit as a value
+            if line.split("|")[3].strip() == "[ms]":
+                continue
             # This line contains a list of options
             options = line.split("|")[3].split(",")
             options = [opt.strip() for opt in options if opt.strip()]
@@ -45,6 +70,8 @@ def process_data(lines):
                 offset_bytes.append(int(i, 16))
 
             name_with_range = parts[3].strip()
+            if not "(" in name_with_range:
+                continue
             name, value_range = name_with_range.rsplit("(", 1)
             name = name.strip()
             # Only the PatchFx table has non-standard names from ON/OFF and TYPE
