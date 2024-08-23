@@ -31,9 +31,9 @@ def convert_to_json(data):
         table = table.strip("] ")
         # The options are the same for each PatchFx
         for i in range(1, 5):
-            for effect in ['Dist', 'Ns', 'Eq', 'Fx', 'Delay']:
+            for effect in ["Dist", "Ns", "Eq", "Fx", "Delay"]:
                 table = table.replace(f"Patch{effect}{i}", f"Patch{effect}")
-        for i in ['A', 'B']:
+        for i in ["A", "B"]:
             table = table.replace(f"PatchPreamp{i}", "PatchPreamp")
 
         # Build the dictionary entry

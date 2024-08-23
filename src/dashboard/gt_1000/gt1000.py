@@ -90,7 +90,18 @@ class GT1000:
         # The known state of the effects
         self.current_state = {"last_sync_ts": {}}
 
-        self.fx_types = ["comp", "dist", "preamp", "ns", "eq", "delay", "mstDelay", "chorus", "fx", "pedalFx"]
+        self.fx_types = [
+            "comp",
+            "dist",
+            "preamp",
+            "ns",
+            "eq",
+            "delay",
+            "mstDelay",
+            "chorus",
+            "fx",
+            "pedalFx",
+        ]
         self.fx_tables = {}
         self.fx_types_count = {}
         self._import_specs_tables()
@@ -108,7 +119,7 @@ class GT1000:
                     if key in ["preampA", "preampB"]:
                         fx_type = "preamp"
                     else:
-                        fx_type = ''.join(i for i in key if not i.isdigit())
+                        fx_type = "".join(i for i in key if not i.isdigit())
                     if fx_type not in self.fx_types:
                         continue
                     self.fx_types_count[fx_type] += 1
@@ -203,10 +214,11 @@ class GT1000:
 
     def _get_one_fx_value(self, fx_type, fx_id, value_entry):
         offset = self._construct_address_value(
-                self._get_start_section(fx_type, fx_id),
-                f"{fx_type}{fx_id}",
-                value_entry,
-                None)
+            self._get_start_section(fx_type, fx_id),
+            f"{fx_type}{fx_id}",
+            value_entry,
+            None,
+        )
         data = self.fetch_mem(offset, ONE_BYTE)
         if data is None:
             logger.warning(f"__get_one_fx_state no data for {fx_type}{fx_id}")
@@ -410,7 +422,9 @@ class GT1000:
             logger.info("GT-1000CORE detected")
             self.model = "GT-1000CORE"
         else:
-            logger.warning(f"Unknown model detected: [{hex(software_rev_1)}, {hex(software_rev_2)}]")
+            logger.warning(
+                f"Unknown model detected: [{hex(software_rev_1)}, {hex(software_rev_2)}]"
+            )
         self.device_id = device_id
         return True
 

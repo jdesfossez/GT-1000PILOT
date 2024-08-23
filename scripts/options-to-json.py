@@ -10,20 +10,22 @@ def parse_value_range(value_range_str):
     value_range = [int(x) for x in value_range_str.strip("()").split("-")]
     return value_range
 
+
 # FIXME: delay ranges are weird: you get a range and then names:
 # 1ms - 2000ms, 32ndNote, Triplet16thNote, [...]
 # so we need to expand to:
 # 1ms, 2ms, [...], 2000ms, 32ndNote, Triplet16thNote, [...]
 def expand_range(begin, end, unit, divide=1):
     all_names = "| | | "
-    for i in range(begin, end+ 1):
+    for i in range(begin, end + 1):
         if divide != 1:
-            value = i/divide
+            value = i / divide
         else:
             value = i
-        all_names += (f"{value}{unit}, ")
+        all_names += f"{value}{unit}, "
     all_names += "|"
     return all_names
+
 
 def process_data(lines):
     result = {}

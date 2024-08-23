@@ -9,13 +9,15 @@ last_action_ts = None
 
 callbacks_registered = {}
 
+
 def get_icon(fx_type):
     prefix = "/assets/"
-    icons = {"dist": "stompbox-dist.png",
-             "eq": "stompbox-eq.png",
-             "fx": "stompbox-fx.png",
-             "comp": "stompbox-comp.png",
-             }
+    icons = {
+        "dist": "stompbox-dist.png",
+        "eq": "stompbox-eq.png",
+        "fx": "stompbox-fx.png",
+        "comp": "stompbox-comp.png",
+    }
     if fx_type in icons:
         return f"{prefix}{icons[fx_type]}"
     return f"{prefix}stompbox-fx.png"
@@ -57,7 +59,8 @@ def refresh_all_effects(fx_type):
 
 
 def generate_buttons(fx_type):
-    return html.Div([
+    return html.Div(
+        [
             html.Div(
                 children=[
                     html.Button(
@@ -70,47 +73,50 @@ def generate_buttons(fx_type):
                                             src=get_icon(fx_type),
                                             width="80%",
                                             height="20%",
-                                            ),
+                                        ),
                                         html.H2(
                                             id=f"fx{n}_name",
-                                            children=gt1000.dash_effects[fx_type][n - 1][
-                                                "name"
-                                                ],
-                                            ),
-                                        ],
+                                            children=gt1000.dash_effects[fx_type][
+                                                n - 1
+                                            ]["name"],
+                                        ),
+                                    ],
                                     style={"color": "black"},
-                                    )
                                 )
-                            ],
+                            )
+                        ],
                         n_clicks=0,
                         style={
-                            "backgroundColor": gt1000.dash_effects[fx_type][n - 1]["color"],
+                            "backgroundColor": gt1000.dash_effects[fx_type][n - 1][
+                                "color"
+                            ],
                             "display": "flex",
                             "flex-direction": "column",
                             "align-items": "center",
                             "justify-content": "center",
                             "max-height": "100%",  # Ensure button stays within its container
                             "textDecoration": "none",
-                            },
-                        )
+                        },
+                    )
                     for n in range(1, len(gt1000.dash_effects[fx_type]) + 1)
-                    ],
+                ],
                 style={
                     "display": "grid",
                     "grid-template-columns": f"repeat({len(gt1000.dash_effects[fx_type])}, 1fr)",
                     "width": "100vw",
                     "height": "80%",
                     "gap": "0",
-                    },
-                )
-            ],
-                     style={
-        "display": "flex",
-        "flex-direction": "column",  # Aligns children vertically
-        "height": "100vh",  # Ensures full height of the viewport is used
-        "margin": "0",
-        "padding": "0",
-    })
+                },
+            )
+        ],
+        style={
+            "display": "flex",
+            "flex-direction": "column",  # Aligns children vertically
+            "height": "100vh",  # Ensures full height of the viewport is used
+            "margin": "0",
+            "padding": "0",
+        },
+    )
 
 
 def serve_layout(fx_type):
