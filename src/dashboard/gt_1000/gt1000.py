@@ -94,13 +94,6 @@ class GT1000:
             table_name = i.name.split(".")[0]
             self.tables[table_name] = json.loads(i.read_text())
 
-        # Aliases
-        self.base_address_pointers = {
-            "live_fx1": "patch (temporary patch)",
-            "live_fx2": "patch (temporary patch)",
-            "live_fx3": "patch (temporary patch)",
-            "live_fx4": "patch3 (temporary patch)",
-        }
         logger.info(f"GT1000 instance created {self}")
 
     def start_refresh_thread(self):
@@ -195,7 +188,7 @@ class GT1000:
 
     def _get_fx_name(self, fx_id):
         offset = self._construct_address_value(
-            self.base_address_pointers[f"live_fx{fx_id}"],
+            self._get_start_section("fx", fx_id),
             f"fx{fx_id}",
             "FX1 TYPE",
             None,
@@ -211,7 +204,8 @@ class GT1000:
 
     def _get_fx_state(self, fx_id):
         offset = self._construct_address_value(
-            self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", None
+                self._get_start_section("fx", fx_id),
+            f"fx{fx_id}", "FX SW", None
         )
         data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         if data is None:
@@ -324,17 +318,24 @@ class GT1000:
         total = sum(data) % 128
         return [128 - total]
 
-    def enable_fx(self, fx_id):
-        msg = self.build_dt_message(
-            self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", "ON"
-        )
-        return msg
+    def _get_start_section(self, fx_type, fx_id):
+        if fx_type == "fx" and int(fx_id) == 4:
+            return "patch3 (temporary patch)"
+        return "patch (temporary patch)"
 
-    def disable_fx(self, fx_id):
-        msg = self.build_dt_message(
-            self.base_address_pointers[f"live_fx{fx_id}"], f"fx{fx_id}", "FX SW", "OFF"
+    def _get_switch_option_name(self, fx_type):
+        if fx_type == "fx":
+            return "FX SW"
+        return "SW"
+
+    def toggle_fx_state(self, fx_type, fx_id, state):
+        self.send_message(self.build_dt_message(
+            self._get_start_section(fx_type, fx_id),
+            f"{fx_type}{fx_id}",
+            self._get_switch_option_name(fx_type),
+            state,
         )
-        return msg
+    )
 
     def send_message(self, message, offset=None):
         with self.data_semaphore:

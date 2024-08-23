@@ -5,15 +5,15 @@ from time import sleep
 
 from shared import gt1000, off_color, on_color, logger
 
-dash.register_page(__name__, path="/")
+dash.register_page(__name__, path="/eq")
 
 # This holds the current layout, we only want to refresh this if there
 # was an actual change in state to avoid constant refreshes
 current_buttons = None
 last_action_ts = None
 
-state_key = "fx"
-icon = "/assets/stompbox-effects.png"
+state_key = "eq"
+icon = "/assets/stompbox-eq.png"
 callbacks_registered = False
 
 def register_callbacks(app):
@@ -28,8 +28,8 @@ def refresh_all_effects():
     global callbacks_registered
     gt1000_ready = True
     if state_key not in gt1000.get_state():
-        current_state = {state_key: []}
         gt1000_ready = False
+        current_state = {state_key: []}
     current_state = gt1000.get_state()
     # If we clicked on a button but the current_state from the pedal wasn't
     # sync'ed yet, we want to keep our old state otherwise the pedal color will
@@ -41,6 +41,9 @@ def refresh_all_effects():
             gt1000.dash_effects[state_key][i]["color"] = off_color
         else:
             gt1000.dash_effects[state_key][i]["color"] = on_color
+        # EQs don't have names
+        gt1000.dash_effects[state_key][i]["name"] = f"{state_key}{i+1}"
+
     if gt1000_ready and not callbacks_registered:
         register_callbacks(get_app())
         callbacks_registered = True
