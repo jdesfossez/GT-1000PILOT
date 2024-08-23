@@ -16,13 +16,15 @@ state_key = "fx"
 icon = "/assets/stompbox-effects.png"
 callbacks_registered = False
 
+
 def register_callbacks(app):
     for n in range(1, len(gt1000.dash_effects[state_key]) + 1):
         app.callback(
-                Output(f"{state_key}_toggle_fx{n}", "style"),
-                Input(f"{state_key}_toggle_fx{n}", "n_clicks"),
-                prevent_initial_call=True,
-                )(lambda n_clicks, fx_num=n: send_fx_state_command(fx_num, n_clicks))
+            Output(f"{state_key}_toggle_fx{n}", "style"),
+            Input(f"{state_key}_toggle_fx{n}", "n_clicks"),
+            prevent_initial_call=True,
+        )(lambda n_clicks, fx_num=n: send_fx_state_command(fx_num, n_clicks))
+
 
 def refresh_all_effects():
     global callbacks_registered
@@ -34,7 +36,10 @@ def refresh_all_effects():
     # If we clicked on a button but the current_state from the pedal wasn't
     # sync'ed yet, we want to keep our old state otherwise the pedal color will
     # go back to its previous state.
-    if last_action_ts is None or current_state["last_sync_ts"][state_key] > last_action_ts:
+    if (
+        last_action_ts is None
+        or current_state["last_sync_ts"][state_key] > last_action_ts
+    ):
         gt1000.dash_effects[state_key] = current_state[state_key]
     for i in range(len(gt1000.dash_effects[state_key])):
         if gt1000.dash_effects[state_key][i]["state"] == "OFF":
@@ -63,7 +68,9 @@ def generate_buttons():
                                 ),
                                 html.H2(
                                     id=f"fx{n}_name",
-                                    children=gt1000.dash_effects[state_key][n - 1]["name"],
+                                    children=gt1000.dash_effects[state_key][n - 1][
+                                        "name"
+                                    ],
                                 ),
                             ],
                             style={"color": "black"},
@@ -71,7 +78,9 @@ def generate_buttons():
                     )
                 ],
                 n_clicks=0,
-                style={"backgroundColor": gt1000.dash_effects[state_key][n - 1]["color"]},
+                style={
+                    "backgroundColor": gt1000.dash_effects[state_key][n - 1]["color"]
+                },
             )
             for n in range(1, len(gt1000.dash_effects[state_key]) + 1)
         ],
@@ -101,12 +110,13 @@ def serve_layout():
     )
 
 
-@callback(Output(f"{state_key}_buttons", "children"), Input("interval-component", "n_intervals"))
+@callback(
+    Output(f"{state_key}_buttons", "children"),
+    Input("interval-component", "n_intervals"),
+)
 def update_metrics(n):
     refresh_all_effects()
     return generate_buttons()
-
-
 
 
 def send_fx_state_command(fx_num, n_clicks):
@@ -127,4 +137,4 @@ def send_fx_state_command(fx_num, n_clicks):
 
 
 layout = serve_layout
-#register_callbacks(get_app())
+# register_callbacks(get_app())

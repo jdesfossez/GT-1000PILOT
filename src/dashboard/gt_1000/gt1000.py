@@ -105,9 +105,10 @@ class GT1000:
         self.stop = True
 
     def refresh_state(self):
-        refresh_fn = {"eq": self.get_all_eq_states,
-                      "fx": self.get_all_fx_names_state,
-                      }
+        refresh_fn = {
+            "eq": self.get_all_eq_states,
+            "fx": self.get_all_fx_names_state,
+        }
         for state_key in refresh_fn:
             logger.debug(f"Refresh state for {state_key}")
             with self.state_lock:
@@ -185,7 +186,6 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
-
     def _get_fx_name(self, fx_id):
         offset = self._construct_address_value(
             self._get_start_section("fx", fx_id),
@@ -204,8 +204,7 @@ class GT1000:
 
     def _get_fx_state(self, fx_id):
         offset = self._construct_address_value(
-                self._get_start_section("fx", fx_id),
-            f"fx{fx_id}", "FX SW", None
+            self._get_start_section("fx", fx_id), f"fx{fx_id}", "FX SW", None
         )
         data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         if data is None:
@@ -234,14 +233,10 @@ class GT1000:
             effects.append(self.get_one_fx_name_state(fx_id))
         return effects
 
-
     def _get_one_eq_state(self, eq_id):
         offset = self._construct_address_value(
-                "patch (temporary patch)",
-                f"eq{eq_id}",
-                "SW",
-                None
-                )
+            "patch (temporary patch)", f"eq{eq_id}", "SW", None
+        )
         data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
         if data is None:
             logger.warning(f"__get_one_eq_state no data for eq {eq_id}")
@@ -329,13 +324,14 @@ class GT1000:
         return "SW"
 
     def toggle_fx_state(self, fx_type, fx_id, state):
-        self.send_message(self.build_dt_message(
-            self._get_start_section(fx_type, fx_id),
-            f"{fx_type}{fx_id}",
-            self._get_switch_option_name(fx_type),
-            state,
+        self.send_message(
+            self.build_dt_message(
+                self._get_start_section(fx_type, fx_id),
+                f"{fx_type}{fx_id}",
+                self._get_switch_option_name(fx_type),
+                state,
+            )
         )
-    )
 
     def send_message(self, message, offset=None):
         with self.data_semaphore:
