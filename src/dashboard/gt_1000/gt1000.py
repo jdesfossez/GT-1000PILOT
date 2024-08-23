@@ -13,8 +13,7 @@ from pathlib import Path
 
 from .constants import (
     SYSEX_END,
-    EQ_COUNT,
-    DIST_COUNT,
+    ONE_BYTE,
     MODEL_ID,
     PATCH_NAMES_LEN,
     EDITOR_REPLY1,
@@ -52,7 +51,7 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def bytes_to_int(value):
@@ -91,11 +90,27 @@ class GT1000:
         # The known state of the effects
         self.current_state = {"last_sync_ts": {}}
 
-        for i in (Path(__file__).parent / "specs").glob("*.json"):
-            table_name = i.name.split(".")[0]
-            self.tables[table_name] = json.loads(i.read_text())
+        self.fx_types = ["comp", "dist", "preamp", "ns", "eq", "delay", "mstDelay", "chorus", "fx", "pedalFx"]
+        self.fx_tables = {}
+        self.fx_types_count = {}
+        self._import_specs_tables()
 
         logger.info(f"GT1000 instance created {self}")
+
+    def _import_specs_tables(self):
+        for i in self.fx_types:
+            self.fx_types_count[i] = 0
+        for i in (Path(__file__).parent / "specs").glob("*.json"):
+            table_name = i.name.split(".")[0]
+            table = json.loads(i.read_text())
+            if table_name == "Patch" or table_name == "Patch3":
+                for key in table:
+                    fx_type = ''.join(i for i in key if not i.isdigit())
+                    if fx_type not in self.fx_types:
+                        continue
+                    self.fx_types_count[fx_type] += 1
+                    self.fx_tables[fx_type] = table[key]["table"]
+            self.tables[table_name] = table
 
     def start_refresh_thread(self):
         """Background thread to refresh the known device state"""
@@ -106,16 +121,13 @@ class GT1000:
         self.stop = True
 
     def refresh_state(self):
-        refresh_fn = {
-            "eq": self.get_all_eq_states,
-            "fx": self.get_all_fx_names_state,
-            "dist": self.get_all_dist_states,
-        }
-        for state_key in refresh_fn:
-            logger.debug(f"Refresh state for {state_key}")
+        for fx_type in self.fx_types:
+            if fx_type not in ["eq", "fx", "dist"]:
+                continue
+            logger.debug(f"Refresh state for {fx_type}")
             with self.state_lock:
-                self.current_state[state_key] = refresh_fn[state_key]()
-                self.current_state["last_sync_ts"][state_key] = datetime.now()
+                self.current_state[fx_type] = self.get_all_fx_type_states(fx_type)
+                self.current_state["last_sync_ts"][fx_type] = datetime.now()
 
     def get_state(self):
         with self.state_lock:
@@ -188,96 +200,37 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
-    def _get_fx_name(self, fx_id):
+    def _get_one_fx_value(self, fx_type, fx_id, value_entry):
         offset = self._construct_address_value(
-            self._get_start_section("fx", fx_id),
-            f"fx{fx_id}",
-            "FX1 TYPE",
-            None,
-        )
-        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
+                self._get_start_section(fx_type, fx_id),
+                f"{fx_type}{fx_id}",
+                value_entry,
+                None)
+        data = self.fetch_mem(offset, ONE_BYTE)
         if data is None:
-            logger.warning(f"_get_fx_name no data for fx {fx_id}")
+            logger.warning(f"__get_one_fx_state no data for {fx_type}{fx_id}")
             return None
-        for i in self.tables["PatchFx"]["FX1 TYPE"]["values"]:
-            if data[0] == self.tables["PatchFx"]["FX1 TYPE"]["values"][i]:
+        fx_table = self.tables[self.fx_tables[fx_type]]
+        for i in fx_table[value_entry]["values"]:
+            if data[0] == fx_table[value_entry]["values"][i]:
                 return i
         return None
 
-    def _get_fx_state(self, fx_id):
-        offset = self._construct_address_value(
-            self._get_start_section("fx", fx_id), f"fx{fx_id}", "FX SW", None
-        )
-        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
-        if data is None:
-            logger.warning(f"_get_fx_bypass no data for fx {fx_id} bypass")
-            return None
-        for i in self.tables["PatchFx"]["FX SW"]["values"]:
-            if data[0] == self.tables["PatchFx"]["FX SW"]["values"][i]:
-                return i
-        return None
+    def _get_one_fx_state(self, fx_type, fx_id):
+        state = self._get_one_fx_value(fx_type, fx_id, "SW")
+        name = self._get_one_fx_value(fx_type, fx_id, "TYPE")
+        return {"fx_id": fx_id, "state": state, "name": name}
 
-    def get_one_fx_name_state(self, fx_id):
-        name = self._get_fx_name(fx_id)
-        state = self._get_fx_state(fx_id)
-        return {"fx_id": fx_id, "name": name, "state": state}
-
-    def get_all_fx_names_state(self):
-        logger.debug("get_all_fx_names_state")
-        if self.model == "GT-1000CORE":
-            nr_fx = 3
-        else:
-            nr_fx = 4
-
-        effects = []
-        for i in range(nr_fx):
-            fx_id = i + 1
-            effects.append(self.get_one_fx_name_state(fx_id))
-        return effects
-
-    def _get_one_eq_state(self, eq_id):
-        offset = self._construct_address_value(
-            "patch (temporary patch)", f"eq{eq_id}", "SW", None
-        )
-        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
-        if data is None:
-            logger.warning(f"__get_one_eq_state no data for eq {eq_id}")
-            return None
-        state = None
-        for i in self.tables["PatchEq"]["SW"]["values"]:
-            if data[0] == self.tables["PatchEq"]["SW"]["values"][i]:
-                state = i
-        return {"eq_id": eq_id, "state": state}
-
-    def get_all_eq_states(self):
+    def get_all_fx_type_states(self, fx_type):
         logger.debug("get_all_eq_state")
         out = []
-        for i in range(EQ_COUNT):
-            eq_id = i + 1
-            out.append(self._get_one_eq_state(eq_id))
-        return out
-
-    # TODO: factorize this
-    def _get_one_dist_state(self, dist_id):
-        offset = self._construct_address_value(
-                "patch (temporary patch)", f"dist{dist_id}", "SW", None
-                )
-        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
-        if data is None:
-            logger.warning(f"__get_one_dist_state no data for dist {dist_id}")
-            return None
-        state = None
-        for i in self.tables["PatchDist"]["SW"]["values"]:
-            if data[0] == self.tables["PatchDist"]["SW"]["values"][i]:
-                state = i
-        return {"dist_id": dist_id, "state": state}
-
-    def get_all_dist_states(self):
-        logger.debug("get_all_dist_state")
-        out = []
-        for i in range(DIST_COUNT):
-            dist_id = i + 1
-            out.append(self._get_one_dist_state(dist_id))
+        for i in range(self.fx_types_count[fx_type]):
+            # Blocks with a single instance like "comp" don't have an numeric ID
+            if self.fx_types_count[fx_type] == 1:
+                fx_id = ""
+            else:
+                fx_id = str(i + 1)
+            out.append(self._get_one_fx_state(fx_type, fx_id))
         return out
 
     def fetch_mem(self, offset, length, override_checksum=None):
@@ -311,6 +264,10 @@ class GT1000:
         # Device identification
         if not self.request_identity():
             return False
+        if self.model == "GT-1000CORE":
+            # Special case here, the others have 4 FX blocks
+            self.fx_types_count["fx"] = 3
+
         # The 2 fetch operations here may break if the value returned changes at some point.
         # Not sure what is the point of those, it looks like a simple check to make sure the
         # device is responsive.
@@ -339,7 +296,7 @@ class GT1000:
         return [128 - total]
 
     def _get_start_section(self, fx_type, fx_id):
-        if fx_type == "fx" and int(fx_id) == 4:
+        if fx_type == "fx" and fx_id == "4":
             return "patch3 (temporary patch)"
         return "patch (temporary patch)"
 
@@ -441,6 +398,8 @@ class GT1000:
         elif software_rev_1 == 0x02 and software_rev_2 == 0x00:
             logger.info("GT-1000CORE detected")
             self.model = "GT-1000CORE"
+        else:
+            logger.warning(f"Unknown model detected: [{hex(software_rev_1)}, {hex(software_rev_2)}]")
         self.device_id = device_id
         return True
 

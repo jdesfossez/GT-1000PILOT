@@ -47,6 +47,12 @@ def process_data(lines):
             name_with_range = parts[3].strip()
             name, value_range = name_with_range.rsplit("(", 1)
             name = name.strip()
+            # Only the PatchFx table has non-standard names from ON/OFF and TYPE
+            # let's fix that here to avoid special cases in the code.
+            if name == "FX SW":
+                name = "SW"
+            elif name == "FX1 TYPE":
+                name = "TYPE"
             value_range = parse_value_range(value_range)
 
             # Prepare a dictionary for this name

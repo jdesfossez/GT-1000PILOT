@@ -39,9 +39,6 @@ def refresh_all_effects(fx_type):
             gt1000.dash_effects[fx_type][i]["color"] = off_color
         else:
             gt1000.dash_effects[fx_type][i]["color"] = on_color
-        # EQs don't have names
-        if fx_type != "fx":
-            gt1000.dash_effects[fx_type][i]["name"] = f"{fx_type}{i+1}"
 
     if gt1000_ready and not callbacks_registered[fx_type]:
         register_callbacks(get_app(), fx_type)
