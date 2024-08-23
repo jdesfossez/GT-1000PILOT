@@ -244,7 +244,9 @@ class GT1000:
         return self.wait_recv_data(offset)
 
     def set_byte(self, offset, data):
-        self.send_message(self.assemble_message(DT1_SYSEX_HEADER, offset + data), offset)
+        self.send_message(
+            self.assemble_message(DT1_SYSEX_HEADER, offset + data), offset
+        )
 
     def fetch_patch_names(self):
         data = self.fetch_mem(PATCH_NAMES_BEGIN_OFFSET, PATCH_NAMES_LEN)

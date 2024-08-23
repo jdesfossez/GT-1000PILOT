@@ -16,6 +16,7 @@ else:
 current_buttons = None
 last_action_ts = None
 
+icon = "/assets/stompbox-effects.png"
 
 def refresh_all_effects():
     while "fx" not in gt1000.get_state():
@@ -45,7 +46,7 @@ def generate_buttons():
                         html.Div(
                             children=[
                                 html.Img(
-                                    src="/assets/stompbox.png",
+                                    src=icon,
                                     width="80%",
                                     height="80%",
                                 ),
