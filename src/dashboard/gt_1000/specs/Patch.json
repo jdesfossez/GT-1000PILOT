@@ -14,7 +14,7 @@
             19,
             0
         ],
-        "table": "PatchDist1",
+        "table": "PatchDist",
         "hex_address": "[0x0, 0x13, 0x0]"
     },
     "dist2": {
@@ -23,7 +23,7 @@
             20,
             0
         ],
-        "table": "PatchDist2",
+        "table": "PatchDist",
         "hex_address": "[0x0, 0x14, 0x0]"
     },
     "preampA": {
@@ -32,7 +32,7 @@
             21,
             0
         ],
-        "table": "PatchPreampA",
+        "table": "PatchPreamp",
         "hex_address": "[0x0, 0x15, 0x0]"
     },
     "preampB": {
@@ -41,7 +41,7 @@
             22,
             0
         ],
-        "table": "PatchPreampB",
+        "table": "PatchPreamp",
         "hex_address": "[0x0, 0x16, 0x0]"
     },
     "ns1": {
@@ -50,7 +50,7 @@
             23,
             0
         ],
-        "table": "PatchNs1",
+        "table": "PatchNs",
         "hex_address": "[0x0, 0x17, 0x0]"
     },
     "ns2": {
@@ -59,7 +59,7 @@
             24,
             0
         ],
-        "table": "PatchNs2",
+        "table": "PatchNs",
         "hex_address": "[0x0, 0x18, 0x0]"
     },
     "eq1": {
@@ -104,7 +104,7 @@
             29,
             0
         ],
-        "table": "PatchDelay1",
+        "table": "PatchDelay",
         "hex_address": "[0x0, 0x1d, 0x0]"
     },
     "delay2": {
@@ -113,7 +113,7 @@
             30,
             0
         ],
-        "table": "PatchDelay2",
+        "table": "PatchDelay",
         "hex_address": "[0x0, 0x1e, 0x0]"
     },
     "delay3": {
@@ -122,7 +122,7 @@
             31,
             0
         ],
-        "table": "PatchDelay3",
+        "table": "PatchDelay",
         "hex_address": "[0x0, 0x1f, 0x0]"
     },
     "delay4": {
@@ -131,7 +131,7 @@
             32,
             0
         ],
-        "table": "PatchDelay4",
+        "table": "PatchDelay",
         "hex_address": "[0x0, 0x20, 0x0]"
     },
     "mstDelay": {

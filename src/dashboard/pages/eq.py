@@ -30,8 +30,8 @@ def refresh_all_effects():
     global callbacks_registered
     gt1000_ready = True
     if state_key not in gt1000.get_state():
-        gt1000_ready = False
         current_state = {state_key: []}
+        gt1000_ready = False
     current_state = gt1000.get_state()
     # If we clicked on a button but the current_state from the pedal wasn't
     # sync'ed yet, we want to keep our old state otherwise the pedal color will
