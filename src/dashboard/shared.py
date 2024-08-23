@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
 gt1000 = GT1000()
+gt1000.dash_effects = {}
 
 
 def open_gt1000():
