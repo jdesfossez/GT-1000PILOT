@@ -24,6 +24,9 @@ def process_data(lines):
         print(line)
 
         if current_name and line.startswith("| | |"):
+            # EQ range is not written as a CSV list, fix it manually here
+            if line == "| | | -20 - 0 - +20 [dB] |":
+                line = "| | | -20dB, -19dB, -18dB, -17dB, -16dB, -15dB, -14dB, -13dB, -12dB, -11dB, -10dB, -9dB, -8dB, -7dB, -6dB, -5dB, -4dB, -3dB, -2dB, -1dB, +0dB, +1dB, +2dB, +3dB, +4dB, +5dB, +6dB, +7dB, +8dB, +9dB, +10dB, +11dB, +12dB, +13dB, +14dB, +15dB, +16dB, +17dB, +18dB, +19dB, +20dB |"
             # This line contains a list of options
             options = line.split("|")[3].split(",")
             options = [opt.strip() for opt in options if opt.strip()]

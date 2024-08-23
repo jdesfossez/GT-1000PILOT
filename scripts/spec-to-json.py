@@ -32,6 +32,8 @@ def convert_to_json(data):
         # The options are the same for each PatchFx
         for i in range(1, 5):
             table = table.replace(f"PatchFx{i}", "PatchFx")
+        for i in range(1, 5):
+            table = table.replace(f"PatchEq{i}", "PatchEq")
 
         # Build the dictionary entry
         result[name] = {"address": address, "table": table, "hex_address": hex_address}
