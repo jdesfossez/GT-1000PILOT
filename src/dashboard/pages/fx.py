@@ -9,7 +9,6 @@ from pages.pages_common import send_fx_state_command, register_callbacks, refres
 dash.register_page(__name__, path="/")
 
 state_key = "fx"
-icon = "/assets/stompbox-effects.png"
 callbacks_registered[state_key] = False
 
 
@@ -19,6 +18,6 @@ callbacks_registered[state_key] = False
 )
 def update_metrics(n):
     refresh_all_effects(state_key)
-    return generate_buttons(state_key, icon)
+    return generate_buttons(state_key)
 
-layout = serve_layout(state_key, icon)
+layout = serve_layout(state_key)

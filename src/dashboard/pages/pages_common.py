@@ -9,6 +9,17 @@ last_action_ts = None
 
 callbacks_registered = {}
 
+def get_icon(fx_type):
+    prefix = "/assets/"
+    icons = {"dist": "stompbox-dist.png",
+             "eq": "stompbox-eq.png",
+             "fx": "stompbox-fx.png",
+             "comp": "stompbox-comp.png",
+             }
+    if fx_type in icons:
+        return f"{prefix}{icons[fx_type]}"
+    return f"{prefix}stompbox-fx.png"
+
 
 def register_callbacks(app, fx_type):
     for n in range(1, len(gt1000.dash_effects[fx_type]) + 1):
@@ -45,7 +56,7 @@ def refresh_all_effects(fx_type):
         callbacks_registered[fx_type] = True
 
 
-def generate_buttons(fx_type, icon):
+def generate_buttons(fx_type):
     return html.Div(
         children=[
             html.Button(
@@ -55,9 +66,9 @@ def generate_buttons(fx_type, icon):
                         html.Div(
                             children=[
                                 html.Img(
-                                    src=icon,
+                                    src=get_icon(fx_type),
                                     width="80%",
-                                    height="80%",
+                                    height="20%",
                                 ),
                                 html.H2(
                                     id=f"fx{n}_name",
@@ -87,7 +98,7 @@ def generate_buttons(fx_type, icon):
     )
 
 
-def serve_layout(fx_type, icon):
+def serve_layout(fx_type):
     refresh_all_effects(fx_type)
     return html.Div(
         id="button-grid",
@@ -97,7 +108,7 @@ def serve_layout(fx_type, icon):
                 interval=2 * 1000,  # in milliseconds
                 n_intervals=0,
             ),
-            html.Div(id=f"{fx_type}_buttons", children=generate_buttons(fx_type, icon)),
+            html.Div(id=f"{fx_type}_buttons", children=generate_buttons(fx_type)),
         ],
     )
 

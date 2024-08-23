@@ -105,7 +105,10 @@ class GT1000:
             table = json.loads(i.read_text())
             if table_name == "Patch" or table_name == "Patch3":
                 for key in table:
-                    fx_type = ''.join(i for i in key if not i.isdigit())
+                    if key in ["preampA", "preampB"]:
+                        fx_type = "preamp"
+                    else:
+                        fx_type = ''.join(i for i in key if not i.isdigit())
                     if fx_type not in self.fx_types:
                         continue
                     self.fx_types_count[fx_type] += 1
@@ -122,9 +125,7 @@ class GT1000:
 
     def refresh_state(self):
         for fx_type in self.fx_types:
-            if fx_type not in ["eq", "fx", "dist"]:
-                continue
-            logger.debug(f"Refresh state for {fx_type}")
+            logger.info(f"Refresh state for {fx_type}")
             with self.state_lock:
                 self.current_state[fx_type] = self.get_all_fx_type_states(fx_type)
                 self.current_state["last_sync_ts"][fx_type] = datetime.now()
@@ -218,16 +219,24 @@ class GT1000:
 
     def _get_one_fx_state(self, fx_type, fx_id):
         state = self._get_one_fx_value(fx_type, fx_id, "SW")
-        name = self._get_one_fx_value(fx_type, fx_id, "TYPE")
+        # These don't have a TYPE field in the spec
+        if fx_type in ["ns", "delay"]:
+            name = f"{fx_type}{fx_id}"
+        else:
+            name = self._get_one_fx_value(fx_type, fx_id, "TYPE")
         return {"fx_id": fx_id, "state": state, "name": name}
 
     def get_all_fx_type_states(self, fx_type):
-        logger.debug("get_all_eq_state")
+        logger.debug("get_all_fx_type_state")
         out = []
         for i in range(self.fx_types_count[fx_type]):
             # Blocks with a single instance like "comp" don't have an numeric ID
             if self.fx_types_count[fx_type] == 1:
                 fx_id = ""
+            elif fx_type == "preamp" and i == 0:
+                fx_id = "A"
+            elif fx_type == "preamp" and i == 1:
+                fx_id = "B"
             else:
                 fx_id = str(i + 1)
             out.append(self._get_one_fx_state(fx_type, fx_id))
@@ -300,17 +309,19 @@ class GT1000:
             return "patch3 (temporary patch)"
         return "patch (temporary patch)"
 
-    def _get_switch_option_name(self, fx_type):
-        if fx_type == "fx":
-            return "FX SW"
-        return "SW"
-
     def toggle_fx_state(self, fx_type, fx_id, state):
+        # Strip the number for blocks with only one instance
+        if self.fx_types_count[fx_type] == 1:
+            fx_id = ""
+        elif fx_type == "preamp" and fx_id == 1:
+            fx_id = "A"
+        elif fx_type == "preamp" and fx_id == 2:
+            fx_id = "B"
         self.send_message(
             self.build_dt_message(
                 self._get_start_section(fx_type, fx_id),
                 f"{fx_type}{fx_id}",
-                self._get_switch_option_name(fx_type),
+                "SW",
                 state,
             )
         )
