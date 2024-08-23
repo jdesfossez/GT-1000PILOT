@@ -14,6 +14,7 @@ from pathlib import Path
 from .constants import (
     SYSEX_END,
     EQ_COUNT,
+    DIST_COUNT,
     MODEL_ID,
     PATCH_NAMES_LEN,
     EDITOR_REPLY1,
@@ -108,6 +109,7 @@ class GT1000:
         refresh_fn = {
             "eq": self.get_all_eq_states,
             "fx": self.get_all_fx_names_state,
+            "dist": self.get_all_dist_states,
         }
         for state_key in refresh_fn:
             logger.debug(f"Refresh state for {state_key}")
@@ -253,6 +255,29 @@ class GT1000:
         for i in range(EQ_COUNT):
             eq_id = i + 1
             out.append(self._get_one_eq_state(eq_id))
+        return out
+
+    # TODO: factorize this
+    def _get_one_dist_state(self, dist_id):
+        offset = self._construct_address_value(
+                "patch (temporary patch)", f"dist{dist_id}", "SW", None
+                )
+        data = self.fetch_mem(offset, [0x0, 0x0, 0x0, 0x1])
+        if data is None:
+            logger.warning(f"__get_one_dist_state no data for dist {dist_id}")
+            return None
+        state = None
+        for i in self.tables["PatchDist"]["SW"]["values"]:
+            if data[0] == self.tables["PatchDist"]["SW"]["values"][i]:
+                state = i
+        return {"dist_id": dist_id, "state": state}
+
+    def get_all_dist_states(self):
+        logger.debug("get_all_dist_state")
+        out = []
+        for i in range(DIST_COUNT):
+            dist_id = i + 1
+            out.append(self._get_one_dist_state(dist_id))
         return out
 
     def fetch_mem(self, offset, length, override_checksum=None):

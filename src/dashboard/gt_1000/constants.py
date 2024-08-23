@@ -65,3 +65,4 @@ PATCH_NAMES_REPLY = (
 # [0x52, 0x0, 0x3e, 0x0]
 
 EQ_COUNT = 4
+DIST_COUNT = 2

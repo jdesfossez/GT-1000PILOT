@@ -6,10 +6,10 @@ from time import sleep
 from shared import gt1000, off_color, on_color, logger
 from pages.pages_common import send_fx_state_command, register_callbacks, refresh_all_effects, generate_buttons, serve_layout, callbacks_registered
 
-dash.register_page(__name__, path="/eq")
+dash.register_page(__name__, path="/dist")
 
-state_key = "eq"
-icon = "/assets/stompbox-eq.png"
+state_key = "dist"
+icon = "/assets/stompbox-dist.png"
 callbacks_registered[state_key] = False
 
 
