@@ -32,6 +32,7 @@ def process_data(lines):
     current_name = None
     current_value_range = None
     offset = 0
+    conflict_count = {}
 
     for line in lines:
         # Remove leading and trailing whitespace
@@ -84,6 +85,16 @@ def process_data(lines):
                 name = "TYPE"
             value_range = parse_value_range(value_range)
 
+            # Some option names have duplicates in the spec...
+            # for example in PatchEq, LEVEL is there twice, one
+            # for each type for some reason
+            if name in result:
+                if name in conflict_count:
+                    conflict_count[name] += 1
+                else:
+                    conflict_count[name] = 1
+                print(f"WARNING: conflicting name {name}, storing as {name}{conflict_count[name]}")
+                name = f"{name}{conflict_count[name]}"
             # Prepare a dictionary for this name
             result[name] = {
                 "offset": offset_bytes,

@@ -137,6 +137,8 @@ class GT1000:
     def refresh_state(self):
         for fx_type in self.fx_types:
             logger.info(f"Refresh state for {fx_type}")
+            if self.stop:
+                return
             with self.state_lock:
                 self.current_state[fx_type] = self.get_all_fx_type_states(fx_type)
                 self.current_state["last_sync_ts"][fx_type] = datetime.now()
@@ -221,13 +223,56 @@ class GT1000:
         )
         data = self.fetch_mem(offset, ONE_BYTE)
         if data is None:
-            logger.warning(f"__get_one_fx_state no data for {fx_type}{fx_id}")
+            logger.warning(f"_get_one_fx_state no data for {fx_type}{fx_id}")
             return None
         fx_table = self.tables[self.fx_tables[fx_type]]
         for i in fx_table[value_entry]["values"]:
             if data[0] == fx_table[value_entry]["values"][i]:
                 return i
-        return None
+        # If there is not text mapping to the value, just return the value
+        return data[0]
+
+    def _get_one_slider(self, fx_type, fx_id, option):
+        value_range = self._lookup_value_range(
+                self._get_start_section(fx_type, fx_id),
+                f"{fx_type}{fx_id}",
+                option)
+        value = self._get_one_fx_value(fx_type, fx_id, option)
+        return {"value": value,
+                   "label": option,
+                   "min": value_range[0],
+                   "max": value_range[1],
+                   }
+
+    def _get_sliders(self, fx_type, fx_id, param_name):
+        if fx_type == "comp":
+            slider1 = self._get_one_slider(fx_type, fx_id, "SUSTAIN")
+            slider2 = self._get_one_slider(fx_type, fx_id, "LEVEL")
+        elif fx_type == "dist":
+            slider1 = self._get_one_slider(fx_type, fx_id, "DRIVE")
+            slider2 = self._get_one_slider(fx_type, fx_id, "LEVEL")
+        elif fx_type == "preamp":
+            slider1 = self._get_one_slider(fx_type, fx_id, "GAIN")
+            slider2 = self._get_one_slider(fx_type, fx_id, "LEVEL")
+        elif fx_type == "ns":
+            slider1 = self._get_one_slider(fx_type, fx_id, "THRESHOLD")
+            slider2 = self._get_one_slider(fx_type, fx_id, "RELEASE")
+        elif fx_type == "eq":
+            if param_name == "PARAMETRIC":
+                slider1 = self._get_one_slider(fx_type, fx_id, "LEVEL1")
+            else:
+                slider1 = self._get_one_slider(fx_type, fx_id, "LEVEL")
+            slider2 = None
+        elif fx_type in ["delay", "mstDelay", "chorus", "reverb"]:
+            slider1 = self._get_one_slider(fx_type, fx_id, "EFFECT LEVEL")
+            slider2 = self._get_one_slider(fx_type, fx_id, "DIRECT LEVEL")
+        elif fx_type == "pedalFx":
+            slider1 = self._get_one_slider(fx_type, fx_id, "EFFECT LEVEL")
+            slider2 = self._get_one_slider(fx_type, fx_id, "DIRECT MIX")
+        else:
+            slider1 = None
+            slider2 = None
+        return slider1, slider2
 
     def _get_one_fx_state(self, fx_type, fx_id):
         state = self._get_one_fx_value(fx_type, fx_id, "SW")
@@ -236,7 +281,11 @@ class GT1000:
             name = f"{fx_type}{fx_id}"
         else:
             name = self._get_one_fx_value(fx_type, fx_id, "TYPE")
-        return {"fx_id": fx_id, "state": state, "name": name}
+        slider1, slider2 = self._get_sliders(fx_type, fx_id, name)
+        return {"fx_id": fx_id, "state": state, "name": name,
+                "slider1": slider1,
+                "slider2": slider2,
+                }
 
     def get_all_fx_type_states(self, fx_type):
         logger.debug("get_all_fx_type_state")
@@ -481,3 +530,18 @@ class GT1000:
         byte_sequence = address.to_bytes(num_bytes, byteorder="big") + value
         byte_list = [byte for byte in byte_sequence]
         return byte_list
+
+    def _lookup_value_range(self, start_section, option, setting):
+        # param is the setting we want to set, if None we just contruct the base address
+        if start_section not in self.tables["base-addresses"]:
+            logger.error(f"Entry {start_section} missing in base-addresses")
+            return None
+
+        section_entry = self.tables["base-addresses"][start_section]
+        address = bytes_to_int(section_entry["address"])
+
+        option_entry = self.tables[section_entry["table"]][option]
+        option_address_offset = bytes_to_int(option_entry["address"])
+
+        setting_entry = self.tables[option_entry["table"]][setting]
+        return setting_entry["value_range"]
