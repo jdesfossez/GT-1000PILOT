@@ -387,6 +387,23 @@ class GT1000:
             )
         )
 
+    def set_fx_value(self, fx_type, fx_id, option, value):
+        # Strip the number for blocks with only one instance
+        if self.fx_types_count[fx_type] == 1:
+            fx_id = ""
+        elif fx_type == "preamp" and fx_id == 1:
+            fx_id = "A"
+        elif fx_type == "preamp" and fx_id == 2:
+            fx_id = "B"
+        self.send_message(
+                self.build_dt_message(
+                    self._get_start_section(fx_type, fx_id),
+                    f"{fx_type}{fx_id}",
+                    option,
+                    value,
+                    )
+                )
+
     def send_message(self, message, offset=None):
         with self.data_semaphore:
             self.received_data[str(offset)] = None
@@ -522,9 +539,12 @@ class GT1000:
             byte_list = [byte for byte in byte_sequence]
             return byte_list
 
-        param_entry = setting_entry["values"][param]
-
-        value = param_entry.to_bytes(1, byteorder="big")
+        # If we set the raw value
+        if param not in setting_entry["values"]:
+            value = param.to_bytes(1, byteorder="big")
+        else:
+            param_entry = setting_entry["values"][param]
+            value = param_entry.to_bytes(1, byteorder="big")
 
         num_bytes = (address.bit_length() + 7) // 8
         byte_sequence = address.to_bytes(num_bytes, byteorder="big") + value

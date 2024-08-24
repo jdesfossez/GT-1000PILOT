@@ -32,6 +32,18 @@ def register_callbacks(app, fx_type):
             prevent_initial_call=True,
         )(lambda n_clicks, fx_num=n: send_fx_state_command(fx_type, fx_num, n_clicks))
 
+        # Slider callback
+        for s in ["slider1", "slider2"]:
+            slider_dict = gt1000.dash_effects[fx_type][n - 1][s]
+            if slider_dict is not None:
+                slider_id = f'slider_{fx_type}{n}_{slider_dict["label"]}'
+
+                app.callback(
+#                        Output(f"{fx_type}_toggle_fx{n}", "style"),  # Example output, adjust to your needs
+                        Input(slider_id, "value"),
+                        prevent_initial_call=True,
+                        )(lambda value, fx_type=fx_type, fx_id=n, label=slider_dict["label"], slider=s: handle_slider_change(value, fx_type, fx_id, label, slider))
+
 
 def refresh_all_effects(fx_type):
     global callbacks_registered
@@ -68,7 +80,7 @@ def build_one_slider(fx_type, fx_id, slider):
             min=slider["min"],
             max=slider["max"],
             value=slider["value"],
-            id=f'slider_{fx_type}{fx_id}',
+            id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
             )])
 
 def build_grid(fx_type):
@@ -206,6 +218,7 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
     global last_action_ts
     last_action_ts = datetime.now()
     if gt1000.dash_effects[fx_type][fx_num - 1]["state"] == "ON":
+        logger.info(f"{fx_type}{fx_num} enabled")
         gt1000.toggle_fx_state(fx_type, fx_num, "OFF")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "OFF"
@@ -221,6 +234,7 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
                 "textDecoration": "none"}
     else:
         gt1000.toggle_fx_state(fx_type, fx_num, "ON")
+        logger.info(f"{fx_type}{fx_num} disabled")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "ON"
         return {"backgroundColor": on_color,
@@ -233,3 +247,13 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
                 "box-sizing": "border-box",  # Include padding/border in size calculations
                 "overflow": "hidden",  # Prevent any content overflow
                 "textDecoration": "none"}
+
+
+def handle_slider_change(value, fx_type, fx_id, label, slider):
+    global last_action_ts
+    last_action_ts = datetime.now()
+    # This function handles what happens when the slider value changes
+    # You can use the fx_type, fx_id, and label to perform your logic
+    logger.info(f"Slider changed: {fx_type}, {fx_id}, {label}, new value: {value}")
+    gt1000.dash_effects[fx_type][fx_id - 1][slider]["value"] = value
+    gt1000.set_fx_value(fx_type, fx_id, label, value)
