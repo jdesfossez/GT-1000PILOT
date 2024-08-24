@@ -1,9 +1,10 @@
 import dash
 from dash import html, dcc, ctx, Input, Output, callback, get_app
+import dash_bootstrap_components as dbc
 from datetime import datetime
 from time import sleep
 
-from shared import gt1000, off_color, on_color, logger
+from shared import gt1000, off_color, on_color, logger, buttons_pc_height
 
 last_action_ts = None
 
@@ -58,66 +59,82 @@ def refresh_all_effects(fx_type):
         callbacks_registered[fx_type] = True
 
 
-def generate_buttons(fx_type):
-    return html.Div(
-        [
-            html.Div(
-                children=[
-                    html.Button(
-                        id=f"{fx_type}_toggle_fx{n}",
-                        children=[
-                            dcc.Loading(
-                                html.Div(
-                                    children=[
-                                        html.Img(
-                                            src=get_icon(fx_type),
-                                            width="80%",
-                                            height="20%",
-                                        ),
-                                        html.H2(
-                                            id=f"fx{n}_name",
-                                            children=gt1000.dash_effects[fx_type][
-                                                n - 1
-                                            ]["name"],
-                                        ),
-                                    ],
-                                    style={"color": "black"},
-                                )
-                            )
-                        ],
-                        n_clicks=0,
-                        style={
-                            "backgroundColor": gt1000.dash_effects[fx_type][n - 1][
-                                "color"
-                            ],
-                            "display": "flex",
-                            "flex-direction": "column",
-                            "align-items": "center",
-                            "justify-content": "center",
-                            "max-height": "100%",  # Ensure button stays within its container
-                            "textDecoration": "none",
-                        },
-                    )
-                    for n in range(1, len(gt1000.dash_effects[fx_type]) + 1)
-                ],
-                style={
-                    "display": "grid",
-                    "grid-template-columns": f"repeat({len(gt1000.dash_effects[fx_type])}, 1fr)",
-                    "width": "100vw",
-                    "height": "80%",
-                    "gap": "0",
-                },
-            )
-        ],
-        style={
-            "display": "flex",
-            "flex-direction": "column",  # Aligns children vertically
-            "height": "100vh",  # Ensures full height of the viewport is used
-            "margin": "0",
-            "padding": "0",
-        },
-    )
+def build_grid(fx_type):
+    grid = []
+    num_effects = len(gt1000.dash_effects[fx_type])
+    col_width = int(12 / num_effects)  # Column width based on number of effects
 
+    for n in range(1, num_effects + 1):
+        grid.append(dbc.Col(
+            width=col_width,
+            children=[
+                html.Button(
+                    id=f"{fx_type}_toggle_fx{n}",
+                    children=[
+                        html.Div(
+                            children=[
+                                html.Img(
+                                    src=get_icon(fx_type),
+                                    style={
+                                        "max-width": "90%",   # Ensures the image width is capped at 100% of its container
+                                        "max-height": "90%",  # Ensures the image height is capped at 100% of its container
+                                        "width": "auto",       # Adjust the width to maintain aspect ratio
+                                        "height": "auto",      # Adjust the height to maintain aspect ratio
+                                        "object-fit": "contain",  # Ensures the entire image is visible, scaling as needed
+                                    },
+                                ),
+                                html.H2(
+                                    id=f"fx{n}_name",
+                                    children=gt1000.dash_effects[fx_type][n - 1]["name"],
+                                    style={"text-align": "center", "margin": "0"},  # Center text and remove margins
+                                ),
+                            ],
+                            style={"color": "black", "text-align": "center", "height": "100%", "display": "flex", "flex-direction": "column", "justify-content": "center"},
+                        )
+                    ],
+                    n_clicks=0,
+                    style={
+                        "backgroundColor": gt1000.dash_effects[fx_type][n - 1]["color"],
+                        "display": "flex",
+                        "flex-direction": "column",
+                        "align-items": "center",
+                        "justify-content": "center",
+                        "width": "100%",  # Ensure button takes full width of column
+                        "height": "100%",  # Ensure button takes full height of column
+                        "box-sizing": "border-box",  # Include padding/border in size calculations
+                        "overflow": "hidden",  # Prevent any content overflow
+                        "textDecoration": "none",
+                    },
+                )
+            ]
+        ))
+
+    return grid
+
+def generate_buttons(fx_type):
+    grid = build_grid(fx_type)
+    return html.Div(
+            children=dbc.Row(
+                id="button_grid",
+                children=grid,
+                style={
+                    "display": "flex",
+                    "flex-wrap": "nowrap",  # Ensure items do not wrap to a new row
+                    "justify-content": "space-evenly",  # Evenly space out the columns
+                    "align-items": "stretch",  # Make sure all columns stretch to the same height
+                    "overflow": "hidden",  # Prevent scrollbars
+                    "width": "100%",
+                    "height": "100%",  # Ensure the grid takes full height of its container
+                    }
+
+                ),
+            style={
+                "display": "flex",
+                "flex-direction": "column",
+                "height": f"{buttons_pc_height}vh",  # This should match the max-height defined earlier
+                "overflow": "hidden",  # Prevent scrollbars on the outer container
+                }
+            )
 
 def serve_layout(fx_type):
     refresh_all_effects(fx_type)

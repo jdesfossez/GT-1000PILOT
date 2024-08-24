@@ -3,14 +3,14 @@ from dash import Dash, Input, Output, html, dcc, ctx  # type: ignore
 import dash_bootstrap_components as dbc
 import dash
 from gt_1000.gt1000 import GT1000
-from shared import gt1000, open_gt1000, logger, menu_color1, menu_color2
+from shared import gt1000, open_gt1000, logger, menu_color1, menu_color2, buttons_pc_height
 from time import sleep
 
 while not open_gt1000():
     logger.error("Failed to open GT1000 communication")
     sleep(1)
 
-app = Dash(__name__, use_pages=True, pages_folder="pages")
+app = Dash(__name__, use_pages=True, pages_folder="pages", external_stylesheets = [dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container(
     fluid=True,  # Ensure the container takes up the full width of the viewport
@@ -47,7 +47,7 @@ app.layout = dbc.Container(
                     "box-sizing": "border-box",
                 },
             ),
-            className="h-20",
+            style={"height": "20vh"},
         ),
 
         # Middle section for buttons (70% height)
@@ -66,7 +66,7 @@ app.layout = dbc.Container(
                     "box-sizing": "border-box",
                 },
             ),
-            className="h-70",
+            style={"height": f"{buttons_pc_height}vh"},
         ),
 
         # Bottom section for text (10% height)
@@ -90,10 +90,10 @@ app.layout = dbc.Container(
                     "height": "100%",  # Ensure full height of the allocated 10%
                 },
             ),
-            className="h-10",
+            style={"height": "10vh"},
         ),
     ],
-    className="h-100",
+    style={"height": "100vh"},
 )
 
 if __name__ == "__main__":

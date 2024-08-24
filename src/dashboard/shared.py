@@ -7,6 +7,7 @@ menu_color2 = "#C1C9CB"
 off_color = "#F2E9D8"
 on_color = "#2D8C2A"
 
+buttons_pc_height = 70
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
