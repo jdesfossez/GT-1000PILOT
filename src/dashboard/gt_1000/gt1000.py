@@ -139,9 +139,11 @@ class GT1000:
             logger.info(f"Refresh state for {fx_type}")
             if self.stop:
                 return
+            now = datetime.now()
+            current_state = self.get_all_fx_type_states(fx_type)
             with self.state_lock:
-                self.current_state[fx_type] = self.get_all_fx_type_states(fx_type)
-                self.current_state["last_sync_ts"][fx_type] = datetime.now()
+                self.current_state[fx_type] = current_state
+                self.current_state["last_sync_ts"][fx_type] = now
 
     def get_state(self):
         with self.state_lock:
