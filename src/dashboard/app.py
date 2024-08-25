@@ -78,28 +78,28 @@ app.layout = dbc.Container(
         ),
 
         # Bottom section for text (10% height)
-        dbc.Row(
-            dbc.Col(
-                html.P(
-                    "Some footer text here",
-                    style={
-                        "text-align": "center",
-                        "margin": "0",
-                        "padding": "1rem",
-                        "font-size": "1rem",
-                        "color": "gray",
-                    }
-                ),
-                style={
-                    "display": "flex",
-                    "align-items": "center",
-                    "justify-content": "center",
-                    "background-color": "#f8f8f8",  # Light background for the footer
-                    "height": "100%",  # Ensure full height of the allocated 10%
-                },
-            ),
-            style={"height": "10vh"},
-        ),
+#        dbc.Row(
+#            dbc.Col(
+#                html.P(
+#                    "Some footer text here",
+#                    style={
+#                        "text-align": "center",
+#                        "margin": "0",
+#                        "padding": "1rem",
+#                        "font-size": "1rem",
+#                        "color": "gray",
+#                    }
+#                ),
+#                style={
+#                    "display": "flex",
+#                    "align-items": "center",
+#                    "justify-content": "center",
+#                    "background-color": "#f8f8f8",  # Light background for the footer
+#                    "height": "100%",  # Ensure full height of the allocated 10%
+#                },
+#            ),
+#            style={"height": "10vh"},
+#        ),
     ],
     style={"height": "100vh", "width": "100vw"},
 )

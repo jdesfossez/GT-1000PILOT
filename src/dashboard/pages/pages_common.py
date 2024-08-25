@@ -1,5 +1,5 @@
 import dash
-from dash import html, dcc, ctx, Input, Output, callback, get_app
+from dash import html, dcc, ctx, Input, Output, callback, get_app, State
 import dash_bootstrap_components as dbc
 from datetime import datetime
 from time import sleep
@@ -175,8 +175,9 @@ def build_grid(fx_type):
 def generate_buttons(fx_type):
     grid = build_grid(fx_type)
     return html.Div(
-            children=dbc.Row(
-                id="button_grid",
+            children=[
+            dbc.Row(
+                id="button_grid_content",
                 children=grid,
                 style={
                     "display": "flex",
@@ -190,6 +191,7 @@ def generate_buttons(fx_type):
                     }
 
                 ),
+            ],
             style={
                 "display": "flex",
                 "flex-direction": "column",
