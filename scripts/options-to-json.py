@@ -15,6 +15,7 @@ def parse_value_range(value_range_str):
 # 1ms - 2000ms, 32ndNote, Triplet16thNote, [...]
 # so we need to expand to:
 # 1ms, 2ms, [...], 2000ms, 32ndNote, Triplet16thNote, [...]
+# same in PatchFxCVibe
 def expand_range(begin, end, unit, divide=1):
     all_names = "| | | "
     for i in range(begin, end + 1):
@@ -52,6 +53,8 @@ def process_data(lines):
                 line = expand_range(-10, 10, "")
             elif line == "| | | 0.1s, 0.2s - 10.0s |":
                 line = expand_range(1, 100, "s", divide=10)
+            elif line == "| | | -50 - -1, 0, +1 - +50 |":
+                line = expand_range(-50, 50, "")
             # PRE DELAY in Reverb only has the unit as a value
             if line.split("|")[3].strip() == "[ms]":
                 continue
@@ -93,7 +96,9 @@ def process_data(lines):
                     conflict_count[name] += 1
                 else:
                     conflict_count[name] = 1
-                print(f"WARNING: conflicting name {name}, storing as {name}{conflict_count[name]}")
+                print(
+                    f"WARNING: conflicting name {name}, storing as {name}{conflict_count[name]}"
+                )
                 name = f"{name}{conflict_count[name]}"
             # Prepare a dictionary for this name
             result[name] = {

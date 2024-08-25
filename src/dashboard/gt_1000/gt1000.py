@@ -36,6 +36,7 @@ from .constants import (
     GEN_INFO,
     IDENTITY_REPLY,
     MANUFACTURER_ID,
+    FX_TO_TABLE_SUFFIX,
     GT1000_FAMILY,
     DEVICE_ID_BCAST,
 )
@@ -84,6 +85,8 @@ class GT1000:
         self.received_data = {}
         self.data_semaphore = threading.Semaphore(1)
         self.stop = False
+        # The current name for fx1-4
+        self.current_fx_names = {}
 
         # Protect current_state and prevent state changes while refreshing
         self.state_lock = threading.Semaphore(1)
@@ -216,7 +219,7 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
-    def _get_one_fx_value(self, fx_type, fx_id, value_entry):
+    def _get_one_fx_type_value(self, fx_type, fx_id, value_entry):
         offset = self._construct_address_value(
             self._get_start_section(fx_type, fx_id),
             f"{fx_type}{fx_id}",
@@ -234,17 +237,52 @@ class GT1000:
         # If there is not text mapping to the value, just return the value
         return data[0]
 
+    def _get_one_fx_value(self, fx_type, fx_id, value_entry):
+        fx_name = self.current_fx_names[fx_id]
+        logger.info(f"FX_VALUE for {fx_name} , {fx_type}{fx_id}, {value_entry}")
+        offset = self._construct_address_value(
+            self._get_fx_start_section(fx_id, fx_name),
+            f"{fx_type}{fx_id}{FX_TO_TABLE_SUFFIX[fx_name]}",
+            value_entry,
+            None,
+        )
+        data = self.fetch_mem(offset, ONE_BYTE)
+        if data is None:
+            logger.warning(f"_get_one_fx_value no data for {fx_type}{fx_id} {fx_name}")
+            return None
+        fx_table = self.tables[f"PatchFx{FX_TO_TABLE_SUFFIX[fx_name]}"]
+        for i in fx_table[value_entry]["values"]:
+            if data[0] == fx_table[value_entry]["values"][i]:
+                return i
+        # If there is no text mapping to the value, just return the value
+        return data[0]
+
     def _get_one_slider(self, fx_type, fx_id, option):
         value_range = self._lookup_value_range(
-                self._get_start_section(fx_type, fx_id),
-                f"{fx_type}{fx_id}",
-                option)
+            self._get_start_section(fx_type, fx_id), f"{fx_type}{fx_id}", option
+        )
+        value = self._get_one_fx_type_value(fx_type, fx_id, option)
+        return {
+            "value": value,
+            "label": option,
+            "min": value_range[0],
+            "max": value_range[1],
+        }
+
+    def _get_one_fx_slider(self, fx_type, fx_id, option):
+        fx_name = self.current_fx_names[fx_id]
+        value_range = self._lookup_value_range(
+            self._get_fx_start_section(fx_id, fx_name),
+            f"{fx_type}{fx_id}{FX_TO_TABLE_SUFFIX[fx_name]}",
+            option,
+        )
         value = self._get_one_fx_value(fx_type, fx_id, option)
-        return {"value": value,
-                   "label": option,
-                   "min": value_range[0],
-                   "max": value_range[1],
-                   }
+        return {
+            "value": value,
+            "label": option,
+            "min": value_range[0],
+            "max": value_range[1],
+        }
 
     def _get_sliders(self, fx_type, fx_id, param_name):
         if fx_type == "comp":
@@ -271,23 +309,97 @@ class GT1000:
         elif fx_type == "pedalFx":
             slider1 = self._get_one_slider(fx_type, fx_id, "EFFECT LEVEL")
             slider2 = self._get_one_slider(fx_type, fx_id, "DIRECT MIX")
+        elif fx_type == "fx":
+            if self.current_fx_names[fx_id] in ["AC GUITAR SIM", "AC RESONANCE"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "LEVEL")
+                slider2 = None
+            elif self.current_fx_names[fx_id] in [
+                "AUTO WAH",
+                "DEFRETTER BASS",
+                "FLANGER",
+                "PAN",
+                "PHASER",
+                "RING MOD",
+                "ROTARY",
+                "SITAR SIM",
+                "SLICER",
+                "TOUCH WAH",
+                "TREMOLO",
+                "VIBRATO",
+                "FLANGER BASS",
+            ]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "EFFECT LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT MIX")
+            elif self.current_fx_names[fx_id] in ["CHORUS"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "EFFECT LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT LEVEL")
+            elif self.current_fx_names[fx_id] in ["OVERTONE"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "UPPER LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT LEVEL")
+            elif self.current_fx_names[fx_id] in ["OCTAVE"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "OCTAVE LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT LEVEL")
+            elif self.current_fx_names[fx_id] in [
+                "CLASSIC-VIBE",
+                "DEFRETTER",
+                "CHORUS BASS",
+            ]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "EFFECT LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DEPTH")
+            elif self.current_fx_names[fx_id] in ["SOUND HOLD"]:
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "RISE TIME")
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "EFFECT LEVEL")
+            elif self.current_fx_names[fx_id] in ["S-BEND"]:
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "RISE TIME")
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "FALL TIME")
+            elif self.current_fx_names[fx_id] in ["HUMANIZER"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DEPTH")
+            elif self.current_fx_names[fx_id] in ["DISTORTION"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "DRIVE")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "LEVEL")
+            elif self.current_fx_names[fx_id] in ["MASTERING FX"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "TONE")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "NATURAL")
+            elif self.current_fx_names[fx_id] in ["SLOW GEAR", "SLOW GEAR BASS"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "SENS")
+            elif self.current_fx_names[fx_id] in ["COMPRESSOR"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT MIX")
+            elif self.current_fx_names[fx_id] in ["FEEDBACKER"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "FEEDBACK")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "OCT FEEDBACK")
+            elif self.current_fx_names[fx_id] in ["HARMONIST"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "HR1:LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT LEVEL")
+            elif self.current_fx_names[fx_id] in ["PITCH SHIFTER"]:
+                slider1 = self._get_one_fx_slider(fx_type, fx_id, "PS1:LEVEL")
+                slider2 = self._get_one_fx_slider(fx_type, fx_id, "DIRECT LEVEL")
+            else:
+                slider1 = None
+                slider2 = None
         else:
             slider1 = None
             slider2 = None
         return slider1, slider2
 
     def _get_one_fx_state(self, fx_type, fx_id):
-        state = self._get_one_fx_value(fx_type, fx_id, "SW")
+        state = self._get_one_fx_type_value(fx_type, fx_id, "SW")
         # These don't have a TYPE field in the spec
         if fx_type in ["ns", "delay"]:
             name = f"{fx_type}{fx_id}"
         else:
-            name = self._get_one_fx_value(fx_type, fx_id, "TYPE")
+            name = self._get_one_fx_type_value(fx_type, fx_id, "TYPE")
+        self.current_fx_names[fx_id] = name
         slider1, slider2 = self._get_sliders(fx_type, fx_id, name)
-        return {"fx_id": fx_id, "state": state, "name": name,
-                "slider1": slider1,
-                "slider2": slider2,
-                }
+        return {
+            "fx_id": fx_id,
+            "state": state,
+            "name": name,
+            "slider1": slider1,
+            "slider2": slider2,
+        }
 
     def get_all_fx_type_states(self, fx_type):
         logger.debug("get_all_fx_type_state")
@@ -372,6 +484,31 @@ class GT1000:
             return "patch3 (temporary patch)"
         return "patch (temporary patch)"
 
+    def _get_fx_start_section(self, fx_id, fx_name):
+        table_suffix = FX_TO_TABLE_SUFFIX[fx_name]
+        full_name = f"fx{fx_id}{table_suffix}"
+        if full_name in [
+            "fx1ChorusBass",
+            "fx1FlangerBass",
+            "fx2ChorusBass",
+            "fx2FlangerBass",
+            "fx3ChorusBass",
+            "fx3FlangerBass",
+        ]:
+            return "patch2 (temporary patch)"
+        elif str(fx_id) == "4":
+            return "patch3 (temporary patch)"
+        elif full_name in [
+            "fx1Dist",
+            "fx1MasterFx",
+            "fx2Dist",
+            "fx2MasterFx",
+            "fx3Dist",
+            "fx3MasterFx",
+        ]:
+            return "patch3 (temporary patch)"
+        return "patch (temporary patch)"
+
     def toggle_fx_state(self, fx_type, fx_id, state):
         # Strip the number for blocks with only one instance
         if self.fx_types_count[fx_type] == 1:
@@ -398,13 +535,13 @@ class GT1000:
         elif fx_type == "preamp" and fx_id == 2:
             fx_id = "B"
         self.send_message(
-                self.build_dt_message(
-                    self._get_start_section(fx_type, fx_id),
-                    f"{fx_type}{fx_id}",
-                    option,
-                    value,
-                    )
-                )
+            self.build_dt_message(
+                self._get_start_section(fx_type, fx_id),
+                f"{fx_type}{fx_id}",
+                option,
+                value,
+            )
+        )
 
     def send_message(self, message, offset=None):
         with self.data_semaphore:

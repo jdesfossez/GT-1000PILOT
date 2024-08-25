@@ -3,14 +3,26 @@ from dash import Dash, Input, Output, html, dcc, ctx  # type: ignore
 import dash_bootstrap_components as dbc
 import dash
 from gt_1000.gt1000 import GT1000
-from shared import gt1000, open_gt1000, logger, menu_color1, menu_color2, buttons_pc_height
+from shared import (
+    gt1000,
+    open_gt1000,
+    logger,
+    menu_color1,
+    menu_color2,
+    buttons_pc_height,
+)
 from time import sleep
 
 while not open_gt1000():
     logger.error("Failed to open GT1000 communication")
     sleep(1)
 
-app = Dash(__name__, use_pages=True, pages_folder="pages", external_stylesheets = [dbc.themes.BOOTSTRAP])
+app = Dash(
+    __name__,
+    use_pages=True,
+    pages_folder="pages",
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+)
 
 app.layout = dbc.Container(
     fluid=True,  # Ensure the container takes up the full width of the viewport
@@ -25,7 +37,9 @@ app.layout = dbc.Container(
                         children=page["name"].upper(),
                         href=page["relative_path"],
                         style={
-                            "backgroundColor": menu_color1 if i % 2 == 0 else menu_color2,
+                            "backgroundColor": menu_color1
+                            if i % 2 == 0
+                            else menu_color2,
                             "display": "flex",
                             "justify-content": "center",
                             "align-items": "center",
@@ -33,7 +47,7 @@ app.layout = dbc.Container(
                             "color": "black",
                             "padding": "0.5rem",
                             "height": "100%",
-                            #"width": "100%",
+                            # "width": "100%",
                         },
                     )
                     for i, page in enumerate(dash.page_registry.values())
@@ -47,11 +61,11 @@ app.layout = dbc.Container(
                     "box-sizing": "border-box",
                 },
             ),
-            style={"height": "20vh",
-                   "width": "100vw",
-                   },
+            style={
+                "height": "20vh",
+                "width": "100vw",
+            },
         ),
-
         # Middle section for buttons (70% height)
         dbc.Row(
             dbc.Col(
@@ -71,35 +85,36 @@ app.layout = dbc.Container(
                     "flex": "1",
                 },
             ),
-            style={"height": f"{buttons_pc_height}vh",
-                   "flex": "1",
-                   "width": "100vw",
-                   "flex-grow": "1"},
+            style={
+                "height": f"{buttons_pc_height}vh",
+                "flex": "1",
+                "width": "100vw",
+                "flex-grow": "1",
+            },
         ),
-
         # Bottom section for text (10% height)
-#        dbc.Row(
-#            dbc.Col(
-#                html.P(
-#                    "Some footer text here",
-#                    style={
-#                        "text-align": "center",
-#                        "margin": "0",
-#                        "padding": "1rem",
-#                        "font-size": "1rem",
-#                        "color": "gray",
-#                    }
-#                ),
-#                style={
-#                    "display": "flex",
-#                    "align-items": "center",
-#                    "justify-content": "center",
-#                    "background-color": "#f8f8f8",  # Light background for the footer
-#                    "height": "100%",  # Ensure full height of the allocated 10%
-#                },
-#            ),
-#            style={"height": "10vh"},
-#        ),
+        #        dbc.Row(
+        #            dbc.Col(
+        #                html.P(
+        #                    "Some footer text here",
+        #                    style={
+        #                        "text-align": "center",
+        #                        "margin": "0",
+        #                        "padding": "1rem",
+        #                        "font-size": "1rem",
+        #                        "color": "gray",
+        #                    }
+        #                ),
+        #                style={
+        #                    "display": "flex",
+        #                    "align-items": "center",
+        #                    "justify-content": "center",
+        #                    "background-color": "#f8f8f8",  # Light background for the footer
+        #                    "height": "100%",  # Ensure full height of the allocated 10%
+        #                },
+        #            ),
+        #            style={"height": "10vh"},
+        #        ),
     ],
     style={"height": "100vh", "width": "100vw"},
 )

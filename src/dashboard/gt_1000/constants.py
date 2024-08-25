@@ -65,3 +65,41 @@ PATCH_NAMES_REPLY = (
 # [0x52, 0x0, 0x2, 0x0]
 # [...]
 # [0x52, 0x0, 0x3e, 0x0]
+
+FX_TO_TABLE_SUFFIX = {
+    "AC GUITAR SIM": "AGSim",
+    "AC RESONANCE": "AcReso",
+    "AUTO WAH": "AWah",
+    "CHORUS": "Chorus",
+    "CLASSIC-VIBE": "CVibe",
+    "COMPRESSOR": "Comp",
+    "DEFRETTER": "Defretter",
+    "FEEDBACKER": "Feedbacker",
+    "FLANGER": "Flanger",
+    "HARMONIST": "Harmonist",
+    "HUMANIZER": "Humanizer",
+    "OCTAVE": "Octave",
+    "OVERTONE": "Overtone",
+    "PAN": "Pan",
+    "PHASER": "Phaser",
+    "PITCH SHIFTER": "PitchShift",
+    "RING MOD": "RingMod",
+    "ROTARY": "Rotary",
+    "SITAR SIM": "SitarSim",
+    "SLICER": "Slicer",
+    "SLOW GEAR": "SlowGear",
+    "SOUND HOLD": "SoundHold",
+    "S-BEND": "SBend",
+    "TOUCH WAH": "TWah",
+    "TREMOLO": "Tremolo",
+    "VIBRATO": "Vibrato",
+    "CHORUS BASS": "ChorusBass",
+    "FLANGER BASS": "FlangerBass",
+    "DISTORTION": "Dist",
+    "MASTERING FX": "MasterFx",
+    # These 4 don't have an entry in the "patch[2,3]" tables ?
+    "DEFRETTER BASS": "PatchFxDefretterBass",
+    "OCTAVE BASS": "PatchFxOctaveBass",
+    "SLOW GEAR BASS": "PatchFxSlowGearBass",
+    "TOUCH WAH BASS": "PatchFxTWahBass",
+}

@@ -39,10 +39,16 @@ def register_callbacks(app, fx_type):
                 slider_id = f'slider_{fx_type}{n}_{slider_dict["label"]}'
 
                 app.callback(
-#                        Output(f"{fx_type}_toggle_fx{n}", "style"),  # Example output, adjust to your needs
-                        Input(slider_id, "value"),
-                        prevent_initial_call=True,
-                        )(lambda value, fx_type=fx_type, fx_id=n, label=slider_dict["label"], slider=s: handle_slider_change(value, fx_type, fx_id, label, slider))
+                    #                        Output(f"{fx_type}_toggle_fx{n}", "style"),  # Example output, adjust to your needs
+                    Input(slider_id, "value"),
+                    prevent_initial_call=True,
+                )(
+                    lambda value,
+                    fx_type=fx_type,
+                    fx_id=n,
+                    label=slider_dict["label"],
+                    slider=s: handle_slider_change(value, fx_type, fx_id, label, slider)
+                )
 
 
 def refresh_all_effects(fx_type):
@@ -74,14 +80,20 @@ def refresh_all_effects(fx_type):
 def build_one_slider(fx_type, fx_id, slider):
     if slider is None:
         return html.Div()
-    return html.Div([
-        html.Label(slider["label"], style={"text-align": "center", "width": "100%"}),
-        dcc.Slider(
-            min=slider["min"],
-            max=slider["max"],
-            value=slider["value"],
-            id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
-            )])
+    return html.Div(
+        [
+            html.Label(
+                slider["label"], style={"text-align": "center", "width": "100%"}
+            ),
+            dcc.Slider(
+                min=slider["min"],
+                max=slider["max"],
+                value=slider["value"],
+                id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
+            ),
+        ]
+    )
+
 
 def build_grid(fx_type):
     grid = []
@@ -97,77 +109,89 @@ def build_grid(fx_type):
                 build_one_slider(fx_type, n, slider1_dict),
                 build_one_slider(fx_type, n, slider2_dict),
             ],
-            style={"width": "100%", "padding": "10px 0"}  # Ensure full width and some spacing
-            )
-
-        grid.append(dbc.Col(
-            width=col_width,
-            children=[
-                html.Div(
-                    [
-                        html.Button(
-                            id=f"{fx_type}_toggle_fx{n}",
-                            children=[
-                                html.Div(
-                                    children=[
-                                        html.Img(
-                                            src=get_icon(fx_type),
-                                            style={
-                                                "max-width": "80%",   # Ensure the image width is capped at 100% of its container
-                                                "max-height": "80%",  # Ensure the image height is capped at 100% of its container
-                                                "width": "auto",       # Adjust the width to maintain aspect ratio
-                                                "height": "auto",      # Adjust the height to maintain aspect ratio
-                                                "object-fit": "contain",  # Ensure the entire image is visible, scaling as needed
-                                            },
-                                        ),
-                                        html.H2(
-                                            id=f"fx{n}_name",
-                                            children=gt1000.dash_effects[fx_type][n - 1]["name"],
-                                            style={"text-align": "center", "margin": "0"},  # Center text and remove margins
-                                        ),
-                                    ],
-                                    style={
-                                        "color": "black",
-                                        "text-align": "center",
-                                        "height": "100%",
-                                        "display": "flex",
-                                        "flex-direction": "column",
-                                        "justify-content": "center",
-                                        "align-items": "center",
-                                        "width": "100%",  # Ensure full width for the content within the button
-                                    },
-                                )
-                            ],
-                            n_clicks=0,
-                            style={
-                                "backgroundColor": gt1000.dash_effects[fx_type][n - 1]["color"],
-                                "display": "flex",
-                                "flex-direction": "column",
-                                "align-items": "center",
-                                "justify-content": "center",
-                                "width": "100%",  # Ensure button takes full width of column
-                                "height": "100%",  # Ensure button takes full height of column
-                                "box-sizing": "border-box",  # Include padding/border in size calculations
-                                "overflow": "hidden",  # Prevent any content overflow
-                                "textDecoration": "none",
-                            },
-                        ),
-                        sliders,
-                    ],
-                    style={
-                        "display": "flex",
-                        "flex-direction": "column",  # Stack button and slider vertically
-                        "align-items": "center",
-                        "width": "100%",  # Ensure full width of the container
-                    }
-                ),
-            ],
             style={
-                "padding": "0",  # Remove padding to prevent overflow
-                "display": "flex",  # Flexbox to handle alignment within the column
-                "align-items": "stretch",  # Stretch button to fill column height
-            }
-        ))
+                "width": "100%",
+                "padding": "10px 0",
+            },  # Ensure full width and some spacing
+        )
+
+        grid.append(
+            dbc.Col(
+                width=col_width,
+                children=[
+                    html.Div(
+                        [
+                            html.Button(
+                                id=f"{fx_type}_toggle_fx{n}",
+                                children=[
+                                    html.Div(
+                                        children=[
+                                            html.Img(
+                                                src=get_icon(fx_type),
+                                                style={
+                                                    "max-width": "80%",  # Ensure the image width is capped at 100% of its container
+                                                    "max-height": "80%",  # Ensure the image height is capped at 100% of its container
+                                                    "width": "auto",  # Adjust the width to maintain aspect ratio
+                                                    "height": "auto",  # Adjust the height to maintain aspect ratio
+                                                    "object-fit": "contain",  # Ensure the entire image is visible, scaling as needed
+                                                },
+                                            ),
+                                            html.H2(
+                                                id=f"fx{n}_name",
+                                                children=gt1000.dash_effects[fx_type][
+                                                    n - 1
+                                                ]["name"],
+                                                style={
+                                                    "text-align": "center",
+                                                    "margin": "0",
+                                                },  # Center text and remove margins
+                                            ),
+                                        ],
+                                        style={
+                                            "color": "black",
+                                            "text-align": "center",
+                                            "height": "100%",
+                                            "display": "flex",
+                                            "flex-direction": "column",
+                                            "justify-content": "center",
+                                            "align-items": "center",
+                                            "width": "100%",  # Ensure full width for the content within the button
+                                        },
+                                    )
+                                ],
+                                n_clicks=0,
+                                style={
+                                    "backgroundColor": gt1000.dash_effects[fx_type][
+                                        n - 1
+                                    ]["color"],
+                                    "display": "flex",
+                                    "flex-direction": "column",
+                                    "align-items": "center",
+                                    "justify-content": "center",
+                                    "width": "100%",  # Ensure button takes full width of column
+                                    "height": "100%",  # Ensure button takes full height of column
+                                    "box-sizing": "border-box",  # Include padding/border in size calculations
+                                    "overflow": "hidden",  # Prevent any content overflow
+                                    "textDecoration": "none",
+                                },
+                            ),
+                            sliders,
+                        ],
+                        style={
+                            "display": "flex",
+                            "flex-direction": "column",  # Stack button and slider vertically
+                            "align-items": "center",
+                            "width": "100%",  # Ensure full width of the container
+                        },
+                    ),
+                ],
+                style={
+                    "padding": "0",  # Remove padding to prevent overflow
+                    "display": "flex",  # Flexbox to handle alignment within the column
+                    "align-items": "stretch",  # Stretch button to fill column height
+                },
+            )
+        )
 
     return grid
 
@@ -175,7 +199,7 @@ def build_grid(fx_type):
 def generate_buttons(fx_type):
     grid = build_grid(fx_type)
     return html.Div(
-            children=[
+        children=[
             dbc.Row(
                 id="button_grid_content",
                 children=grid,
@@ -188,17 +212,17 @@ def generate_buttons(fx_type):
                     "overflow": "hidden",  # Prevent scrollbars
                     "width": "100%",
                     "height": "100%",  # Ensure the grid takes full height of its container
-                    }
+                },
+            ),
+        ],
+        style={
+            "display": "flex",
+            "flex-direction": "column",
+            "height": f"{buttons_pc_height}vh",  # This should match the max-height defined earlier
+            "overflow": "hidden",  # Prevent scrollbars on the outer container
+        },
+    )
 
-                ),
-            ],
-            style={
-                "display": "flex",
-                "flex-direction": "column",
-                "height": f"{buttons_pc_height}vh",  # This should match the max-height defined earlier
-                "overflow": "hidden",  # Prevent scrollbars on the outer container
-                }
-            )
 
 def serve_layout(fx_type):
     refresh_all_effects(fx_type)
@@ -225,31 +249,35 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
         gt1000.toggle_fx_state(fx_type, fx_num, "OFF")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "OFF"
-        return {"backgroundColor": off_color,
-                "display": "flex",
-                "flex-direction": "column",
-                "align-items": "center",
-                "justify-content": "center",
-                "width": "100%",  # Ensure button takes full width of column
-                "height": "100%",  # Ensure button takes full height of column
-                "box-sizing": "border-box",  # Include padding/border in size calculations
-                "overflow": "hidden",  # Prevent any content overflow
-                "textDecoration": "none"}
+        return {
+            "backgroundColor": off_color,
+            "display": "flex",
+            "flex-direction": "column",
+            "align-items": "center",
+            "justify-content": "center",
+            "width": "100%",  # Ensure button takes full width of column
+            "height": "100%",  # Ensure button takes full height of column
+            "box-sizing": "border-box",  # Include padding/border in size calculations
+            "overflow": "hidden",  # Prevent any content overflow
+            "textDecoration": "none",
+        }
     else:
         gt1000.toggle_fx_state(fx_type, fx_num, "ON")
         logger.info(f"{fx_type}{fx_num} disabled")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "ON"
-        return {"backgroundColor": on_color,
-                "display": "flex",
-                "flex-direction": "column",
-                "align-items": "center",
-                "justify-content": "center",
-                "width": "100%",  # Ensure button takes full width of column
-                "height": "100%",  # Ensure button takes full height of column
-                "box-sizing": "border-box",  # Include padding/border in size calculations
-                "overflow": "hidden",  # Prevent any content overflow
-                "textDecoration": "none"}
+        return {
+            "backgroundColor": on_color,
+            "display": "flex",
+            "flex-direction": "column",
+            "align-items": "center",
+            "justify-content": "center",
+            "width": "100%",  # Ensure button takes full width of column
+            "height": "100%",  # Ensure button takes full height of column
+            "box-sizing": "border-box",  # Include padding/border in size calculations
+            "overflow": "hidden",  # Prevent any content overflow
+            "textDecoration": "none",
+        }
 
 
 def handle_slider_change(value, fx_type, fx_id, label, slider):
