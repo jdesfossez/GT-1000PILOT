@@ -37,17 +37,15 @@ app.layout = dbc.Container(
                         children=page["name"].upper(),
                         href=page["relative_path"],
                         style={
-                            "backgroundColor": menu_color1
-                            if i % 2 == 0
-                            else menu_color2,
+                            "backgroundColor": "white",
                             "display": "flex",
+                            "font-weight": "bold",
                             "justify-content": "center",
                             "align-items": "center",
                             "textDecoration": "none",
                             "color": "black",
                             "padding": "0.5rem",
                             "height": "100%",
-                            # "width": "100%",
                         },
                     )
                     for i, page in enumerate(dash.page_registry.values())
@@ -118,6 +116,42 @@ app.layout = dbc.Container(
     ],
     style={"height": "100vh", "width": "100vw"},
 )
+
+
+# Consolidated callback to handle all link styles
+@app.callback(
+    [Output(f'page_{page["name"]}', 'style') for page in dash.page_registry.values()],
+    Input('_pages_location', 'pathname')
+)
+def update_all_link_styles(pathname):
+    styles = []
+    for page in dash.page_registry.values():
+        if pathname == page['relative_path']:
+            styles.append({
+                "backgroundColor": "black",
+                "display": "flex",
+                "justify-content": "center",
+                "align-items": "center",
+                "textDecoration": "none",
+                "font-weight": "bold",
+                "color": "white",
+                "padding": "0.5rem",
+                "height": "100%",
+            })
+        else:
+            styles.append({
+                "backgroundColor": "white",
+                "display": "flex",
+                "justify-content": "center",
+                "align-items": "center",
+                "textDecoration": "none",
+                "color": "black",
+                "font-weight": "bold",
+                "padding": "0.5rem",
+                "height": "100%",
+            })
+    return styles
+
 
 if __name__ == "__main__":
     app.run_server(debug=False, host="0.0.0.0")

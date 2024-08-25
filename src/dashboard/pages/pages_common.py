@@ -79,6 +79,13 @@ def refresh_all_effects(fx_type):
 def build_one_slider(fx_type, fx_id, slider):
     if slider is None:
         return html.Div()
+    # Special case for EQ, we could technically find this automatically in the spec json
+    if fx_type == "eq":
+        marks = {12: "-20dB",
+               32: "0dB",
+               52: "+20dB"}
+    else:
+        marks = {}
     return html.Div(
         [
             html.Label(
@@ -89,6 +96,7 @@ def build_one_slider(fx_type, fx_id, slider):
                 max=slider["max"],
                 value=slider["value"],
                 id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
+                marks=marks
             ),
         ]
     )

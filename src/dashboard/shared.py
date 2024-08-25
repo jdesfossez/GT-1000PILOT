@@ -4,7 +4,8 @@ import logging
 
 menu_color1 = "#ABBACC"
 menu_color2 = "#C1C9CB"
-off_color = "#F2E9D8"
+#off_color = "#F2E9D8"
+off_color = "white"
 on_color = "#2D8C2A"
 
 buttons_pc_height = 70

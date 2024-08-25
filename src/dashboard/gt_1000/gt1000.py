@@ -219,7 +219,7 @@ class GT1000:
         self.midi_in.set_callback(MidiInputHandler(in_portname), self)
         return self.open_editor_mode()
 
-    def _get_one_fx_type_value(self, fx_type, fx_id, value_entry):
+    def _get_one_fx_type_value(self, fx_type, fx_id, value_entry, just_range=False):
         offset = self._construct_address_value(
             self._get_start_section(fx_type, fx_id),
             f"{fx_type}{fx_id}",
@@ -231,6 +231,9 @@ class GT1000:
             logger.warning(f"_get_one_fx_state no data for {fx_type}{fx_id}")
             return None
         fx_table = self.tables[self.fx_tables[fx_type]]
+        # If we just want the numerical value_range, not the text mapping
+        if just_range is True:
+            return data[0]
         for i in fx_table[value_entry]["values"]:
             if data[0] == fx_table[value_entry]["values"][i]:
                 return i
@@ -261,7 +264,7 @@ class GT1000:
         value_range = self._lookup_value_range(
             self._get_start_section(fx_type, fx_id), f"{fx_type}{fx_id}", option
         )
-        value = self._get_one_fx_type_value(fx_type, fx_id, option)
+        value = self._get_one_fx_type_value(fx_type, fx_id, option, just_range=True)
         return {
             "value": value,
             "label": option,
@@ -528,6 +531,8 @@ class GT1000:
         )
 
     def set_fx_value(self, fx_type, fx_id, option, value):
+        # the sliders can want to send float
+        value = int(value)
         # Strip the number for blocks with only one instance
         if self.fx_types_count[fx_type] == 1:
             fx_id = ""
