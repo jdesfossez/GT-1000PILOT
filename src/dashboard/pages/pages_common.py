@@ -53,10 +53,14 @@ def register_callbacks(app, fx_type):
 def refresh_all_effects(fx_type):
     global callbacks_registered
     gt1000_ready = True
-    if fx_type not in gt1000.get_state():
-        current_state = {fx_type: []}
-        gt1000_ready = False
-    current_state = gt1000.get_state()
+    try:
+        if fx_type not in gt1000.get_state():
+            current_state = {fx_type: []}
+            gt1000_ready = False
+        current_state = gt1000.get_state()
+    except Exception:
+        # Catch all to avoid dying on unhandled exceptions
+        logger.exception("Exception caught for toggle_fx_state")
     # If we clicked on a button but the current_state from the pedal wasn't
     # sync'ed yet, we want to keep our old state otherwise the pedal color will
     # go back to its previous state.
@@ -253,7 +257,11 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
     last_action_ts = datetime.now()
     if gt1000.dash_effects[fx_type][fx_num - 1]["state"] == "ON":
         logger.info(f"{fx_type}{fx_num} enabled")
-        gt1000.toggle_fx_state(fx_type, fx_num, "OFF")
+        try:
+            gt1000.toggle_fx_state(fx_type, fx_num, "OFF")
+        except Exception:
+            # Catch all to avoid dying on unhandled exceptions
+            logger.exception("Exception caught for toggle_fx_state")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "OFF"
         return {
@@ -269,7 +277,11 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
             "textDecoration": "none",
         }
     else:
-        gt1000.toggle_fx_state(fx_type, fx_num, "ON")
+        try:
+            gt1000.toggle_fx_state(fx_type, fx_num, "ON")
+        except Exception:
+            # Catch all to avoid dying on unhandled exceptions
+            logger.exception("Exception caught for toggle_fx_state")
         logger.info(f"{fx_type}{fx_num} disabled")
         # optimistically update here
         gt1000.dash_effects[fx_type][fx_num - 1]["state"] = "ON"
@@ -293,4 +305,8 @@ def handle_slider_change(value, fx_type, fx_id, slider):
     label = gt1000.dash_effects[fx_type][fx_id - 1][slider]["label"]
     logger.info(f"Slider changed: {fx_type}, {fx_id}, {label}, new value: {value}")
     gt1000.dash_effects[fx_type][fx_id - 1][slider]["value"] = value
-    gt1000.set_fx_value(fx_type, fx_id, label, value)
+    try:
+        gt1000.set_fx_value(fx_type, fx_id, label, value)
+    except Exception:
+        # Catch all to avoid dying on unhandled exceptions
+        logger.exception("Exception caught for toggle_fx_state")
