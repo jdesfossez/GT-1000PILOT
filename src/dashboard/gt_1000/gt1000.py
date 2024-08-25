@@ -43,7 +43,7 @@ from .constants import (
 
 MIDI_PORT = "GT-1000:GT-1000 MIDI 1"
 SLEEP_WAIT_SEC = 0.1
-REFRESH_STATE_POLL_RATE_SEC = 5
+REFRESH_STATE_POLL_RATE_SEC = 2
 RETRY_COUNT = 100
 
 logging.basicConfig(
@@ -391,7 +391,8 @@ class GT1000:
             name = f"{fx_type}{fx_id}"
         else:
             name = self._get_one_fx_type_value(fx_type, fx_id, "TYPE")
-        self.current_fx_names[fx_id] = name
+        if fx_type == "fx":
+            self.current_fx_names[fx_id] = name
         slider1, slider2 = self._get_sliders(fx_type, fx_id, name)
         return {
             "fx_id": fx_id,
@@ -534,14 +535,29 @@ class GT1000:
             fx_id = "A"
         elif fx_type == "preamp" and fx_id == 2:
             fx_id = "B"
-        self.send_message(
-            self.build_dt_message(
-                self._get_start_section(fx_type, fx_id),
-                f"{fx_type}{fx_id}",
-                option,
-                value,
+        if fx_type == "fx":
+            fx_name = self.current_fx_names[str(fx_id)]
+            table_suffix = FX_TO_TABLE_SUFFIX[fx_name]
+            full_name = f"fx{fx_id}{table_suffix}"
+            logger.info(f"Setting {fx_type}{fx_id} {fx_name} ({full_name}) {option} to {value}")
+            self.send_message(
+                self.build_dt_message(
+                    self._get_fx_start_section(fx_id, fx_name),
+                    full_name,
+                    option,
+                    value,
+                )
             )
-        )
+        else:
+            logger.info(f"Setting {fx_type}{fx_id} {option} to {value}")
+            self.send_message(
+                    self.build_dt_message(
+                        self._get_start_section(fx_type, fx_id),
+                        f"{fx_type}{fx_id}",
+                        option,
+                        value,
+                        )
+                    )
 
     def send_message(self, message, offset=None):
         with self.data_semaphore:

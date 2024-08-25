@@ -46,8 +46,7 @@ def register_callbacks(app, fx_type):
                     lambda value,
                     fx_type=fx_type,
                     fx_id=n,
-                    label=slider_dict["label"],
-                    slider=s: handle_slider_change(value, fx_type, fx_id, label, slider)
+                    slider=s: handle_slider_change(value, fx_type, fx_id, slider)
                 )
 
 
@@ -280,11 +279,10 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
         }
 
 
-def handle_slider_change(value, fx_type, fx_id, label, slider):
+def handle_slider_change(value, fx_type, fx_id, slider):
     global last_action_ts
     last_action_ts = datetime.now()
-    # This function handles what happens when the slider value changes
-    # You can use the fx_type, fx_id, and label to perform your logic
+    label = gt1000.dash_effects[fx_type][fx_id - 1][slider]["label"]
     logger.info(f"Slider changed: {fx_type}, {fx_id}, {label}, new value: {value}")
     gt1000.dash_effects[fx_type][fx_id - 1][slider]["value"] = value
     gt1000.set_fx_value(fx_type, fx_id, label, value)
