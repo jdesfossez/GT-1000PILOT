@@ -16,9 +16,16 @@ logger.setLevel(logging.INFO)
 gt1000 = GT1000()
 gt1000.dash_effects = {}
 
+# Mac and Linux default portname prefixes
+known_default_portname_prefixes = ["GT-1000", "GT-1000:GT-1000 MIDI 1"]
 
 def open_gt1000():
-    if not gt1000.open_ports():
+    opened = False
+    for portname in known_default_portname_prefixes:
+        if not gt1000.open_ports(portname=portname)
+            continue
+        opened = True
+    if not opened:
         return False
     gt1000.refresh_state()
     gt1000.start_refresh_thread()
