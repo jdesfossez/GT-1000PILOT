@@ -33,7 +33,7 @@ app.layout = dbc.Container(
                             "color": "black",
                             "padding": "0.5rem",
                             "height": "100%",
-                            "width": "100%",
+                            #"width": "100%",
                         },
                     )
                     for i, page in enumerate(dash.page_registry.values())
@@ -47,7 +47,9 @@ app.layout = dbc.Container(
                     "box-sizing": "border-box",
                 },
             ),
-            style={"height": "20vh"},
+            style={"height": "20vh",
+                   "width": "100vw",
+                   },
         ),
 
         # Middle section for buttons (70% height)
@@ -57,6 +59,7 @@ app.layout = dbc.Container(
                 style={
                     "display": "flex",
                     "flex-direction": "column",
+                    "flex-grow": "1",
                     "justify-content": "center",  # Center content vertically
                     "align-items": "center",  # Center content horizontally
                     "height": "100%",  # Ensure the section takes up 70% height
@@ -64,9 +67,14 @@ app.layout = dbc.Container(
                     "overflow-y": "auto",  # Allow scrolling if content overflows
                     "padding": "1rem",  # Optional padding
                     "box-sizing": "border-box",
+                    "height": f"{buttons_pc_height}vh",
+                    "flex": "1",
                 },
             ),
-            style={"height": f"{buttons_pc_height}vh"},
+            style={"height": f"{buttons_pc_height}vh",
+                   "flex": "1",
+                   "width": "100vw",
+                   "flex-grow": "1"},
         ),
 
         # Bottom section for text (10% height)
@@ -93,7 +101,7 @@ app.layout = dbc.Container(
             style={"height": "10vh"},
         ),
     ],
-    style={"height": "100vh"},
+    style={"height": "100vh", "width": "100vw"},
 )
 
 if __name__ == "__main__":

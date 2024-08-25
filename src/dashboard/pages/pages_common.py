@@ -182,6 +182,7 @@ def generate_buttons(fx_type):
                     "display": "flex",
                     "flex-wrap": "nowrap",  # Ensure items do not wrap to a new row
                     "justify-content": "space-evenly",  # Evenly space out the columns
+                    "grid-template-columns": "repeat(auto-fill, minmax(100px, 1fr))",
                     "align-items": "stretch",  # Make sure all columns stretch to the same height
                     "overflow": "hidden",  # Prevent scrollbars
                     "width": "100%",
