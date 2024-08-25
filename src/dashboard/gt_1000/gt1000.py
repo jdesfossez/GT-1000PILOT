@@ -539,7 +539,9 @@ class GT1000:
             fx_name = self.current_fx_names[str(fx_id)]
             table_suffix = FX_TO_TABLE_SUFFIX[fx_name]
             full_name = f"fx{fx_id}{table_suffix}"
-            logger.info(f"Setting {fx_type}{fx_id} {fx_name} ({full_name}) {option} to {value}")
+            logger.info(
+                f"Setting {fx_type}{fx_id} {fx_name} ({full_name}) {option} to {value}"
+            )
             self.send_message(
                 self.build_dt_message(
                     self._get_fx_start_section(fx_id, fx_name),
@@ -551,13 +553,13 @@ class GT1000:
         else:
             logger.info(f"Setting {fx_type}{fx_id} {option} to {value}")
             self.send_message(
-                    self.build_dt_message(
-                        self._get_start_section(fx_type, fx_id),
-                        f"{fx_type}{fx_id}",
-                        option,
-                        value,
-                        )
-                    )
+                self.build_dt_message(
+                    self._get_start_section(fx_type, fx_id),
+                    f"{fx_type}{fx_id}",
+                    option,
+                    value,
+                )
+            )
 
     def send_message(self, message, offset=None):
         with self.data_semaphore:
