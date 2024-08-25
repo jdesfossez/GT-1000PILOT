@@ -607,6 +607,20 @@ dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
+name = "pygt1000"
+version = "0.1.0"
+description = "Library to interact with a Boss GT-1000/GT-1000CORE over MIDI"
+optional = false
+python-versions = "<4.0,>=3.10"
+files = [
+    {file = "pygt1000-0.1.0-py3-none-any.whl", hash = "sha256:42af82b61f36c914d72c4221867e9f84f92bdf37318b6dc00396b7d4802b8fe4"},
+    {file = "pygt1000-0.1.0.tar.gz", hash = "sha256:57abe5feeb1c809eccd641b16e5e8e90fd0752f0b2aff54aec11b823d2c48cd1"},
+]
+
+[package.dependencies]
+python-rtmidi = ">=1.5.8,<2.0.0"
+
+[[package]]
 name = "pylsp-mypy"
 version = "0.6.8"
 description = "Mypy linter for the Python LSP Server"
@@ -995,4 +1009,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d6b201ba5fa7a7306433fda4cc864f8bb2e7b5968c82f775b50307d378e028a0"
+content-hash = "8377435d74d1bed9cb968aea19770b74486b34d6570ee30df2fb960368388ccf"

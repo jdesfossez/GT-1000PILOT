@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from gt_1000.gt1000 import GT1000
+from pygt1000 import GT1000
 from time import sleep
 
 gt1000 = GT1000()

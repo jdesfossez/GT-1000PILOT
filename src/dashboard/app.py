@@ -2,7 +2,7 @@ from callbacks import register_callbacks
 from dash import Dash, Input, Output, html, dcc, ctx  # type: ignore
 import dash_bootstrap_components as dbc
 import dash
-from gt_1000.gt1000 import GT1000
+from pygt1000 import GT1000
 from shared import (
     gt1000,
     open_gt1000,

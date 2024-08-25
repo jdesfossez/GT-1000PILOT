@@ -1,4 +1,4 @@
-from gt_1000.gt1000 import GT1000
+from pygt1000 import GT1000
 import logging
 
 
