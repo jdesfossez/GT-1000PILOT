@@ -608,13 +608,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pygt1000"
-version = "0.1.2"
+version = "0.1.5"
 description = "Library to interact with a Boss GT-1000/GT-1000CORE over MIDI"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pygt1000-0.1.2-py3-none-any.whl", hash = "sha256:09b3dd15cf440b9e5982baa4ca0fbbeff667261fd9497337180bf4d01a641307"},
-    {file = "pygt1000-0.1.2.tar.gz", hash = "sha256:bedac433a0c4fcc6b36fcfad06af998c589219f5c25b0a4d7e89959049d99d98"},
+    {file = "pygt1000-0.1.5-py3-none-any.whl", hash = "sha256:141f1e1c2cff5ec2200c12c25ffe399b7949f1a782e400cb1367e0820b8a69fe"},
+    {file = "pygt1000-0.1.5.tar.gz", hash = "sha256:985706c7c866c49a8ed309959aaa1cd9463f4f11112d50666e942425c772ba8b"},
 ]
 
 [package.dependencies]
@@ -1009,4 +1009,4 @@ test = ["big-O", "importlib-resources", "jaraco.functools", "jaraco.itertools", 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c050b91b5c87a53aaa1baf5fdad8d9290da9acdaf2e50c7d70cafddb536d7322"
+content-hash = "a46bcfdd3adcc013f1b35b9e6a713512f52c0f909517a1f6604d016d4cd3cdcc"

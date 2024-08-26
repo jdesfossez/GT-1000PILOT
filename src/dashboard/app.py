@@ -173,7 +173,7 @@ class AppLauncher(tk.Tk):
         self.stop_polling = threading.Event()
 
         # Load and resize the logo image
-        logo_path = Path(__file__).parent / "assets" / "logo.png"
+        logo_path = Path(__file__).parent / "logo.png"
         self.original_logo = tk.PhotoImage(file=logo_path)
         self.logo = self.original_logo.subsample(
             3, 3
