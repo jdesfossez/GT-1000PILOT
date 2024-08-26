@@ -22,7 +22,7 @@ known_default_portname_prefixes = ["GT-1000", "GT-1000:GT-1000 MIDI 1"]
 def open_gt1000():
     opened = False
     for portname in known_default_portname_prefixes:
-        if not gt1000.open_ports(portname=portname)
+        if not gt1000.open_ports(portname=portname):
             continue
         opened = True
     if not opened:
