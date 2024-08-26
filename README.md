@@ -1,4 +1,4 @@
-* GT-1000PILOT - Remotely control a Boss GT-1000/GT-1000CORE
+# GT-1000PILOT - Remotely control a Boss GT-1000/GT-1000CORE
 
 GT-1000PILOT is a web dashboard that lets you remotely control your Boss
 GT-1000/GT-1000CORE effects in real-time over MIDI. Whether you’re jamming at
@@ -20,7 +20,15 @@ unit !
 For live/gig usage this is probably not ideal, but for home/studio it has
 proven to be very fun and convenient to use !
 
-** Usage
+
+<img width="500" alt="gt1000pilot-fx" src="https://github.com/user-attachments/assets/48bd7944-8d1a-449e-b419-6db9105991d7">
+<img width="500" alt="gt1000pilot-comp" src="https://github.com/user-attachments/assets/518028ca-1603-41e0-96b0-0c3583e063e4">
+<img width="500" alt="gt1000pilot-pedalfx" src="https://github.com/user-attachments/assets/429e2278-d8d9-4a81-9cae-3acde65d9d16">
+<img width="500" alt="gt1000pilot-delays" src="https://github.com/user-attachments/assets/5cfd74b8-127e-461c-ba53-0c5445197190">
+
+![usage](https://github.com/user-attachments/assets/9fb24edc-6d52-46ae-885a-a974bfc6e001)
+
+## Usage
 
 This has been tested on Mac, Linux and even embedded in a Raspberry Pi hidden
 on a pedalboard (so it always come up when the pedals are powered on). It
@@ -31,7 +39,7 @@ but it could work just with MIDI connections, just need to add a convenient way
 to configure the application.
 
 Pre-built binary packages for Linux/Mac are available in the
-[https://github.com/jdesfossez/pygt1000/releases](Releases) section. For a
+[Releases](https://github.com/jdesfossez/pygt1000/releases) section. For a
 more manual installation, you can follow the instructions from the Development
 section below.
 
@@ -46,7 +54,7 @@ Finding the IP address of the host running the program depends on the operating
 system running there. To access the dashboard from the same machine:
 `http://localhost:8050` will work.
 
-** Feedback
+## Feedback
 
 I would love to collect feedback and see what users of the GT-1000 think and
 how we could improve the experience. This was started because I always feel
@@ -58,11 +66,11 @@ to use. Hopefully it is useful and fun for others as well ! Feel free to open
 an issue, share your experiences, or suggest features that would make this tool
 even better.
 
-** Development
+## Development
 
 This tool is written in Python, the web dashboard is built using Dash and the
 dependencies are managed with Poetry so after
-[https://python-poetry.org/docs/#installation](installing Poetry) for your
+[installing Poetry](https://python-poetry.org/docs/#installation) for your
 platform
 
 ```
@@ -77,10 +85,10 @@ It is also possible to install using `pip`:
 pip install GT-1000PILOT
 ```
 
-It depends mainly on the [https://github.com/jdesfossez/pygt1000](pygt1000)
+It depends mainly on the [pygt1000](https://github.com/jdesfossez/pygt1000)
 library to interact with the pedal.
 
-** Contributing
+## Contributing
 
 This is open source to make it possible to make the tool evolve to users needs.
 I am not a web developer, so any help around CSS would be appreciated :-) !
