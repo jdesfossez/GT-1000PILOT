@@ -7,6 +7,7 @@ import dash
 import requests
 import threading
 import os
+import sys
 from pathlib import Path
 from gt1000pilot.shared import (
     gt1000,
@@ -23,6 +24,14 @@ try:
 except Exception:
     print("tkinter not installed, running in CLI mode")
     cli_only = True
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except Exception:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
 
 
 def launch(app):
@@ -173,7 +182,8 @@ class AppLauncher(tk.Tk):
         self.stop_polling = threading.Event()
 
         # Load and resize the logo image
-        logo_path = Path("gt1000pilot") / "logo.png"
+        logo_path = resource_path("logo.png")
+#        logo_path = Path("gt1000pilot") / "logo.png"
         self.original_logo = tk.PhotoImage(file=logo_path)
         self.logo = self.original_logo.subsample(3, 3)
         # Adjust the subsample values as needed
