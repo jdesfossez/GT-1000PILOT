@@ -38,7 +38,7 @@ This currently requires the host to be connected to the USB port of the unit,
 but it could work just with MIDI connections, just need to add a convenient way
 to configure the application.
 
-Pre-built binary packages for Linux/Mac are available in the
+Pre-built binary packages for Linux/Mac/Windows are available in the
 [Releases](https://github.com/jdesfossez/pygt1000/releases) section. For a
 more manual installation, you can follow the instructions from the Development
 section below.
