@@ -4,7 +4,7 @@ import logging
 
 menu_color1 = "#ABBACC"
 menu_color2 = "#C1C9CB"
-#off_color = "#F2E9D8"
+# off_color = "#F2E9D8"
 off_color = "white"
 on_color = "#2D8C2A"
 
@@ -18,6 +18,7 @@ gt1000.dash_effects = {}
 
 # Mac and Linux default portname prefixes
 known_default_portname_prefixes = ["GT-1000", "GT-1000:GT-1000 MIDI 1"]
+
 
 def open_gt1000():
     opened = False

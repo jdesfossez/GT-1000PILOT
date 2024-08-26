@@ -1,3 +1,89 @@
-* Boss control
+* GT-1000PILOT - Remotely control a Boss GT-1000/GT-1000CORE
 
-Basic web interface to control effects running live on a Boss GT-1000 with MIDI.
+GT-1000PILOT is a web dashboard that lets you remotely control your Boss
+GT-1000/GT-1000CORE effects in real-time over MIDI. Whether you’re jamming at
+home or experimenting in the studio, GT-1000PILOT makes it easy to toggle
+effects blocks, adjust levels, from your tablet or phone without interrupting
+your playing.
+
+This tool doesn’t replace Boss Tone Studio; instead, it complements it by
+allowing you to see and modify the current state of each effects block quickly.
+It’s designed to make your unit feel more like a traditional pedalboard,
+offering a more dynamic and interactive way to shape your tone.
+
+It doesn't interfere with any of the unit normal functions, it keeps refreshing
+in the background to show the current state, so toggling effects, changing
+patches with a different method works normally and after a few seconds the
+current state is visible on the dashboard. It is really a companion app for the
+unit !
+
+For live/gig usage this is probably not ideal, but for home/studio it has
+proven to be very fun and convenient to use !
+
+** Usage
+
+This has been tested on Mac, Linux and even embedded in a Raspberry Pi hidden
+on a pedalboard (so it always come up when the pedals are powered on). It
+should work on Windows, although the package hasn’t been built or tested yet.
+
+This currently requires the host to be connected to the USB port of the unit,
+but it could work just with MIDI connections, just need to add a convenient way
+to configure the application.
+
+Pre-built binary packages for Linux/Mac are available in the
+[https://github.com/jdesfossez/pygt1000/releases](Releases) section. For a
+more manual installation, you can follow the instructions from the Development
+section below.
+
+When the application starts (GUI or CLI), it connects to the unit, enables the
+editor mode, and start the refresh loop to get the current state of the pedal.
+When the initial sync is complete, it starts a small webserver so we can access
+the dashboard remotely over Wifi.
+
+The dashboard listens for HTTP on the port 8050, so you need to connect to the
+machine running the program with an address like: `http://<your-ip>:8050`.
+Finding the IP address of the host running the program depends on the operating
+system running there. To access the dashboard from the same machine:
+`http://localhost:8050` will work.
+
+** Feedback
+
+I would love to collect feedback and see what users of the GT-1000 think and
+how we could improve the experience. This was started because I always feel
+like I don't have enough buttons to trigger blocks and mapping all of that for
+each patch gets annoying. Now I just create my patches with a lot of optional
+blocks ready to fire and decide on the fly if I want them of not while playing.
+This to me feels a bit more like a traditional pedalboard and makes it more fun
+to use. Hopefully it is useful and fun for others as well ! Feel free to open
+an issue, share your experiences, or suggest features that would make this tool
+even better.
+
+** Development
+
+This tool is written in Python, the web dashboard is built using Dash and the
+dependencies are managed with Poetry so after
+[https://python-poetry.org/docs/#installation](installing Poetry) for your
+platform
+
+```
+git clone https://github.com/jdesfossez/GT-1000PILOT
+cd GT-1000PILOT
+poetry install
+poetry run python gt1000pilot/app.py [--gui]
+```
+
+It is also possible to install using `pip`:
+```
+pip install GT-1000PILOT
+```
+
+It depends mainly on the [https://github.com/jdesfossez/pygt1000](pygt1000)
+library to interact with the pedal.
+
+** Contributing
+
+This is open source to make it possible to make the tool evolve to users needs.
+I am not a web developer, so any help around CSS would be appreciated :-) !
+
+Of course, contributions in all forms (feedback, improving the UI, adding new
+features, or enhancing the documentation) is appreciated !

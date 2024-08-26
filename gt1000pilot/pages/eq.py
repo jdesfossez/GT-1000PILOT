@@ -1,12 +1,7 @@
 import dash
-from dash import html, dcc, ctx, Input, Output, callback, get_app
-from datetime import datetime
-from time import sleep
+from dash import Input, Output, callback
 
-from gt1000pilot.shared import gt1000, off_color, on_color, logger
 from gt1000pilot.pages.pages_common import (
-    send_fx_state_command,
-    register_callbacks,
     refresh_all_effects,
     generate_buttons,
     serve_layout,

@@ -1,8 +1,6 @@
-import dash
-from dash import html, dcc, ctx, Input, Output, callback, get_app, State
+from dash import html, dcc, Input, Output, get_app
 import dash_bootstrap_components as dbc
 from datetime import datetime
-from time import sleep
 
 from gt1000pilot.shared import gt1000, off_color, on_color, logger, buttons_pc_height
 
@@ -85,9 +83,7 @@ def build_one_slider(fx_type, fx_id, slider):
         return html.Div()
     # Special case for EQ, we could technically find this automatically in the spec json
     if fx_type == "eq":
-        marks = {12: "-20dB",
-               32: "0dB",
-               52: "+20dB"}
+        marks = {12: "-20dB", 32: "0dB", 52: "+20dB"}
     else:
         marks = {}
     return html.Div(
@@ -100,7 +96,7 @@ def build_one_slider(fx_type, fx_id, slider):
                 max=slider["max"],
                 value=slider["value"],
                 id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
-                marks=marks
+                marks=marks,
             ),
         ]
     )

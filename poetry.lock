@@ -608,13 +608,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pygt1000"
-version = "0.1.5"
+version = "0.1.7"
 description = "Library to interact with a Boss GT-1000/GT-1000CORE over MIDI"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pygt1000-0.1.5-py3-none-any.whl", hash = "sha256:141f1e1c2cff5ec2200c12c25ffe399b7949f1a782e400cb1367e0820b8a69fe"},
-    {file = "pygt1000-0.1.5.tar.gz", hash = "sha256:985706c7c866c49a8ed309959aaa1cd9463f4f11112d50666e942425c772ba8b"},
+    {file = "pygt1000-0.1.7-py3-none-any.whl", hash = "sha256:31a284131c788477c73948f8231bfc46fcde341e859c28501a91ec3f9d35e7aa"},
+    {file = "pygt1000-0.1.7.tar.gz", hash = "sha256:014aba2034ba6a7cccef64cfc86ccaf8286b21cdae7a655fa4828479667e3eda"},
 ]
 
 [package.dependencies]
@@ -679,13 +679,13 @@ dev = ["pre-commit", "pytest"]
 
 [[package]]
 name = "python-lsp-server"
-version = "1.11.0"
+version = "1.12.0"
 description = "Python Language Server for the Language Server Protocol"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "python-lsp-server-1.11.0.tar.gz", hash = "sha256:89edd6fb3f7852e4bf5a3d1d95ea41484d1a28fa94b6e3cbff12b9db123b8e86"},
-    {file = "python_lsp_server-1.11.0-py3-none-any.whl", hash = "sha256:278cb41ea69ca9f84ec99d4edc96ff5f2f9e795d240771dc46dc1653f56ddfe3"},
+    {file = "python_lsp_server-1.12.0-py3-none-any.whl", hash = "sha256:2e912c661881d85f67f2076e4e66268b695b62bf127e07e81f58b187d4bb6eda"},
+    {file = "python_lsp_server-1.12.0.tar.gz", hash = "sha256:b6a336f128da03bd9bac1e61c3acca6e84242b8b31055a1ccf49d83df9dc053b"},
 ]
 
 [package.dependencies]
@@ -696,11 +696,11 @@ python-lsp-jsonrpc = ">=1.1.0,<2.0.0"
 ujson = ">=3.0.0"
 
 [package.extras]
-all = ["autopep8 (>=2.0.4,<2.1.0)", "flake8 (>=7,<8)", "mccabe (>=0.7.0,<0.8.0)", "pycodestyle (>=2.11.0,<2.12.0)", "pydocstyle (>=6.3.0,<6.4.0)", "pyflakes (>=3.2.0,<3.3.0)", "pylint (>=3.1,<4)", "rope (>=1.11.0)", "whatthepatch (>=1.0.2,<2.0.0)", "yapf (>=0.33.0)"]
+all = ["autopep8 (>=2.0.4,<2.1.0)", "flake8 (>=7.1,<8)", "mccabe (>=0.7.0,<0.8.0)", "pycodestyle (>=2.12.0,<2.13.0)", "pydocstyle (>=6.3.0,<6.4.0)", "pyflakes (>=3.2.0,<3.3.0)", "pylint (>=3.1,<4)", "rope (>=1.11.0)", "whatthepatch (>=1.0.2,<2.0.0)", "yapf (>=0.33.0)"]
 autopep8 = ["autopep8 (>=2.0.4,<2.1.0)"]
-flake8 = ["flake8 (>=7,<8)"]
+flake8 = ["flake8 (>=7.1,<8)"]
 mccabe = ["mccabe (>=0.7.0,<0.8.0)"]
-pycodestyle = ["pycodestyle (>=2.11.0,<2.12.0)"]
+pycodestyle = ["pycodestyle (>=2.12.0,<2.13.0)"]
 pydocstyle = ["pydocstyle (>=6.3.0,<6.4.0)"]
 pyflakes = ["pyflakes (>=3.2.0,<3.3.0)"]
 pylint = ["pylint (>=3.1,<4)"]

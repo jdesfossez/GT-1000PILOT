@@ -118,9 +118,6 @@ def launch(app):
         style={"height": "100vh", "width": "100vw"},
     )
 
-    app.run_server(debug=False, host="0.0.0.0")
-    gt1000.stop_refresh_thread()
-
     # Consolidated callback to handle all link styles
     @app.callback(
         [
@@ -162,6 +159,9 @@ def launch(app):
                 )
         return styles
 
+    app.run_server(debug=False, host="0.0.0.0")
+    gt1000.stop_refresh_thread()
+
 
 class AppLauncher(tk.Tk):
     def __init__(self):
@@ -173,11 +173,10 @@ class AppLauncher(tk.Tk):
         self.stop_polling = threading.Event()
 
         # Load and resize the logo image
-        logo_path = Path(__file__).parent / "logo.png"
+        logo_path = Path("gt1000pilot") / "logo.png"
         self.original_logo = tk.PhotoImage(file=logo_path)
-        self.logo = self.original_logo.subsample(
-            3, 3
-        )  # Adjust the subsample values as needed
+        self.logo = self.original_logo.subsample(3, 3)
+        # Adjust the subsample values as needed
 
         # Display the image in a Label
         self.logo_label = tk.Label(self, image=self.logo)
@@ -246,7 +245,10 @@ class AppLauncher(tk.Tk):
             try:
                 response = requests.get("http://localhost:8050")
                 if response.status_code == 200:
-                    self.status_label.config(text="Application is running. Connect to http://<your-ip>:8050", fg="green")
+                    self.status_label.config(
+                        text="Application is running.\nConnect to http://<your-ip>:8050",
+                        fg="green",
+                    )
                     return
             except requests.ConnectionError:
                 pass
@@ -257,22 +259,26 @@ class AppLauncher(tk.Tk):
         self.stop_app()
         self.destroy()
 
+
 def cli_launch():
     while not open_gt1000():
         logger.error("Failed to open GT1000 communication")
         sleep(1)
     app = Dash(
-            __name__,
-            use_pages=True,
-            pages_folder="pages",
-            external_stylesheets=[dbc.themes.BOOTSTRAP],
-            )
+        __name__,
+        use_pages=True,
+        pages_folder="pages",
+        external_stylesheets=[dbc.themes.BOOTSTRAP],
+    )
     launch(app)
 
+
 def gui_launch():
+    print("Launching application...")
     launcher = AppLauncher()
     launcher.protocol("WM_DELETE_WINDOW", launcher.on_closing)
     launcher.mainloop()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
