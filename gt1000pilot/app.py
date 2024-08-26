@@ -8,7 +8,7 @@ import requests
 import threading
 import os
 from pathlib import Path
-from shared import (
+from gt1000pilot.shared import (
     gt1000,
     open_gt1000,
     logger,
@@ -246,7 +246,7 @@ class AppLauncher(tk.Tk):
             try:
                 response = requests.get("http://localhost:8050")
                 if response.status_code == 200:
-                    self.status_label.config(text="Application is running.", fg="green")
+                    self.status_label.config(text="Application is running. Connect to http://<your-ip>:8050", fg="green")
                     return
             except requests.ConnectionError:
                 pass
@@ -257,6 +257,22 @@ class AppLauncher(tk.Tk):
         self.stop_app()
         self.destroy()
 
+def cli_launch():
+    while not open_gt1000():
+        logger.error("Failed to open GT1000 communication")
+        sleep(1)
+    app = Dash(
+            __name__,
+            use_pages=True,
+            pages_folder="pages",
+            external_stylesheets=[dbc.themes.BOOTSTRAP],
+            )
+    launch(app)
+
+def gui_launch():
+    launcher = AppLauncher()
+    launcher.protocol("WM_DELETE_WINDOW", launcher.on_closing)
+    launcher.mainloop()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -265,17 +281,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if cli_only or args.gui is False:
-        while not open_gt1000():
-            logger.error("Failed to open GT1000 communication")
-            sleep(1)
-        app = Dash(
-            __name__,
-            use_pages=True,
-            pages_folder="pages",
-            external_stylesheets=[dbc.themes.BOOTSTRAP],
-        )
-        launch(app)
+        cli_launch()
     else:
-        launcher = AppLauncher()
-        launcher.protocol("WM_DELETE_WINDOW", launcher.on_closing)
-        launcher.mainloop()
+        gui_launch()

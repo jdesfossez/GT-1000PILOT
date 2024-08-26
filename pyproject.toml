@@ -5,6 +5,7 @@ description = ""
 authors = ["Julien Desfossez"]
 license = "GPLv2"
 readme = "README.md"
+packages = [{include = "gt1000pilot"}]
 
 [tool.poetry.dependencies]
 python = "^3.10"

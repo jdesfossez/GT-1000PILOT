@@ -4,7 +4,7 @@ import dash_bootstrap_components as dbc
 from datetime import datetime
 from time import sleep
 
-from shared import gt1000, off_color, on_color, logger, buttons_pc_height
+from gt1000pilot.shared import gt1000, off_color, on_color, logger, buttons_pc_height
 
 last_action_ts = None
 

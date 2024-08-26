@@ -3,8 +3,8 @@ from dash import html, dcc, ctx, Input, Output, callback, get_app
 from datetime import datetime
 from time import sleep
 
-from shared import gt1000, off_color, on_color, logger
-from pages.pages_common import (
+from gt1000pilot.shared import gt1000, off_color, on_color, logger
+from gt1000pilot.pages.pages_common import (
     send_fx_state_command,
     register_callbacks,
     refresh_all_effects,
@@ -13,9 +13,9 @@ from pages.pages_common import (
     callbacks_registered,
 )
 
-dash.register_page(__name__, path="/preamp")
+dash.register_page(__name__, path="/mstDelay")
 
-state_key = "preamp"
+state_key = "mstDelay"
 callbacks_registered[state_key] = False
 
 
