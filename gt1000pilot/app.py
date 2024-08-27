@@ -192,7 +192,7 @@ class AppLauncher(tk.Tk):
     def __init__(self, midi_in, midi_out):
         super().__init__()
         self.title("GT-1000PILOT Launcher")
-        self.geometry("300x450")
+        self.geometry("300x520")
         self.app_thread = None
         self.polling_thread = None
         self.stop_polling = threading.Event()
@@ -207,20 +207,28 @@ class AppLauncher(tk.Tk):
         self.logo_label.pack(pady=10)
 
         # MIDI Input Dropdown
-        tk.Label(self, text="Select MIDI Port:").pack(pady=5)
+        tk.Label(self, text="Select MIDI Input Port:").pack(pady=5)
         self.midi_in_var = tk.StringVar(self)
-        self.midi_in_var.set(
-            midi_in[find_default_port(midi_in)]
-        )  # set default input port
-        self.midi_in_menu = tk.OptionMenu(self, self.midi_in_var, *midi_in)
+        if len(midi_in) > 0:
+            self.midi_in_var.set(
+                midi_in[find_default_port(midi_in)]
+            )  # set default input port
+            self.midi_in_menu = tk.OptionMenu(self, self.midi_in_var, *midi_in)
+        else:
+            self.midi_in_var.set("")
+            self.midi_in_menu = tk.OptionMenu(self, self.midi_in_var, [])
         self.midi_in_menu.pack(pady=5)
 
         # MIDI Output Dropdown
-        # tk.Label(self, text="Select MIDI Output Port:").pack(pady=5)
-        # self.midi_out_var = tk.StringVar(self)
-        # self.midi_out_var.set(midi_out[find_default_port(midi_out)])  # set default output port
-        # self.midi_out_menu = tk.OptionMenu(self, self.midi_out_var, *midi_out)
-        # self.midi_out_menu.pack(pady=5)
+        tk.Label(self, text="Select MIDI Output Port:").pack(pady=5)
+        self.midi_out_var = tk.StringVar(self)
+        if len(midi_out) > 0:
+            self.midi_out_var.set(midi_out[find_default_port(midi_out)])  # set default output port
+            self.midi_out_menu = tk.OptionMenu(self, self.midi_out_var, *midi_out)
+        else:
+            self.midi_out_var.set("")
+            self.midi_out_menu = tk.OptionMenu(self, self.midi_out_var, [])
+        self.midi_out_menu.pack(pady=5)
 
         # Status Label
         self.status_label = tk.Label(self, text="Application not started.", fg="red")
@@ -248,7 +256,8 @@ class AppLauncher(tk.Tk):
             self.polling_thread.start()
 
             # This needs to start before the Dash app
-            if not open_gt1000(portname=self.midi_in_var.get()):
+            if not open_gt1000(in_portname=self.midi_in_var.get(),
+                               out_portname=self.midi_out_var.get()):
                 logger.error("Failed to open GT1000 communication")
                 self.status_label.config(text="Failed to open GT-1000", fg="red")
                 return
@@ -300,8 +309,8 @@ class AppLauncher(tk.Tk):
         self.destroy()
 
 
-def cli_launch(portname):
-    while not open_gt1000(portname=portname):
+def cli_launch(in_portname, out_portname):
+    while not open_gt1000(in_portname=in_portname, out_portname=out_portname):
         logger.error("Failed to open GT1000 communication")
         sleep(1)
     app = Dash(
@@ -326,15 +335,17 @@ if __name__ == "__main__":
 
     parser.add_argument("--gui", action="store_true")
     parser.add_argument("--list-midi-ports", action="store_true")
-    parser.add_argument("--midi-port", type=str, required=False)
+    parser.add_argument("--input-midi-port", type=str, required=False)
+    parser.add_argument("--output-midi-port", type=str, required=False)
     args = parser.parse_args()
 
     if args.list_midi_ports:
         midi_in, midi_out = get_available_ports()
         print(f"Available midi input ports: {midi_in}")
+        print(f"Available midi output ports: {midi_out}")
         sys.exit(0)
 
     if cli_only or args.gui is False:
-        cli_launch(args.midi_port)
+        cli_launch(args.input_midi_port, args.output_midi_port)
     else:
         gui_launch()

@@ -608,13 +608,13 @@ testing = ["pytest", "pytest-benchmark"]
 
 [[package]]
 name = "pygt1000"
-version = "0.1.7"
+version = "0.1.11"
 description = "Library to interact with a Boss GT-1000/GT-1000CORE over MIDI"
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "pygt1000-0.1.7-py3-none-any.whl", hash = "sha256:31a284131c788477c73948f8231bfc46fcde341e859c28501a91ec3f9d35e7aa"},
-    {file = "pygt1000-0.1.7.tar.gz", hash = "sha256:014aba2034ba6a7cccef64cfc86ccaf8286b21cdae7a655fa4828479667e3eda"},
+    {file = "pygt1000-0.1.11-py3-none-any.whl", hash = "sha256:cf3e93421fc50a8b9289754563c1e1c383f2451ba9e184f38568997e24746d5d"},
+    {file = "pygt1000-0.1.11.tar.gz", hash = "sha256:5962fe20a12f305e471c3a9ebd2de9b3298e4c01db229a549744aea2cc397289"},
 ]
 
 [package.dependencies]
