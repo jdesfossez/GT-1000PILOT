@@ -8,7 +8,7 @@ import requests
 import threading
 import os
 import sys
-from pathlib import Path
+import rtmidi
 from gt1000pilot.shared import (
     gt1000,
     open_gt1000,
@@ -25,6 +25,7 @@ except Exception:
     print("tkinter not installed, running in CLI mode")
     cli_only = True
 
+
 def resource_path(relative_path):
     try:
         base_path = sys._MEIPASS
@@ -32,6 +33,21 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
+
+
+def get_available_ports():
+    tmp_midi_out = rtmidi.MidiOut()
+    tmp_midi_in = rtmidi.MidiIn()
+    midi_in_ports = tmp_midi_in.get_ports()
+    midi_out_ports = tmp_midi_out.get_ports()
+    return midi_in_ports, midi_out_ports
+
+
+def find_default_port(ports, default_name="GT-1000"):
+    for i, port in enumerate(ports):
+        if port.startswith(default_name):
+            return i
+    return 0  # default to the first port if no match found
 
 
 def launch(app):
@@ -173,24 +189,38 @@ def launch(app):
 
 
 class AppLauncher(tk.Tk):
-    def __init__(self):
+    def __init__(self, midi_in, midi_out):
         super().__init__()
         self.title("GT-1000PILOT Launcher")
-        self.geometry("300x380")
+        self.geometry("300x450")
         self.app_thread = None
         self.polling_thread = None
         self.stop_polling = threading.Event()
 
         # Load and resize the logo image
         logo_path = resource_path("logo.png")
-#        logo_path = Path("gt1000pilot") / "logo.png"
         self.original_logo = tk.PhotoImage(file=logo_path)
         self.logo = self.original_logo.subsample(3, 3)
-        # Adjust the subsample values as needed
 
         # Display the image in a Label
         self.logo_label = tk.Label(self, image=self.logo)
         self.logo_label.pack(pady=10)
+
+        # MIDI Input Dropdown
+        tk.Label(self, text="Select MIDI Port:").pack(pady=5)
+        self.midi_in_var = tk.StringVar(self)
+        self.midi_in_var.set(
+            midi_in[find_default_port(midi_in)]
+        )  # set default input port
+        self.midi_in_menu = tk.OptionMenu(self, self.midi_in_var, *midi_in)
+        self.midi_in_menu.pack(pady=5)
+
+        # MIDI Output Dropdown
+        # tk.Label(self, text="Select MIDI Output Port:").pack(pady=5)
+        # self.midi_out_var = tk.StringVar(self)
+        # self.midi_out_var.set(midi_out[find_default_port(midi_out)])  # set default output port
+        # self.midi_out_menu = tk.OptionMenu(self, self.midi_out_var, *midi_out)
+        # self.midi_out_menu.pack(pady=5)
 
         # Status Label
         self.status_label = tk.Label(self, text="Application not started.", fg="red")
@@ -218,7 +248,7 @@ class AppLauncher(tk.Tk):
             self.polling_thread.start()
 
             # This needs to start before the Dash app
-            if not open_gt1000():
+            if not open_gt1000(portname=self.midi_in_var.get()):
                 logger.error("Failed to open GT1000 communication")
                 self.status_label.config(text="Failed to open GT-1000", fg="red")
                 return
@@ -270,8 +300,8 @@ class AppLauncher(tk.Tk):
         self.destroy()
 
 
-def cli_launch():
-    while not open_gt1000():
+def cli_launch(portname):
+    while not open_gt1000(portname=portname):
         logger.error("Failed to open GT1000 communication")
         sleep(1)
     app = Dash(
@@ -285,7 +315,8 @@ def cli_launch():
 
 def gui_launch():
     print("Launching application...")
-    launcher = AppLauncher()
+    midi_in, midi_out = get_available_ports()
+    launcher = AppLauncher(midi_in, midi_out)
     launcher.protocol("WM_DELETE_WINDOW", launcher.on_closing)
     launcher.mainloop()
 
@@ -294,9 +325,16 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--gui", action="store_true")
+    parser.add_argument("--list-midi-ports", action="store_true")
+    parser.add_argument("--midi-port", type=str, required=False)
     args = parser.parse_args()
 
+    if args.list_midi_ports:
+        midi_in, midi_out = get_available_ports()
+        print(f"Available midi input ports: {midi_in}")
+        sys.exit(0)
+
     if cli_only or args.gui is False:
-        cli_launch()
+        cli_launch(args.midi_port)
     else:
         gui_launch()

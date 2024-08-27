@@ -20,9 +20,14 @@ gt1000.dash_effects = {}
 known_default_portname_prefixes = ["GT-1000", "GT-1000:GT-1000 MIDI 1"]
 
 
-def open_gt1000():
+def open_gt1000(portname=None):
     opened = False
-    for portname in known_default_portname_prefixes:
+    if portname is None:
+        portnames = known_default_portname_prefixes
+    else:
+        portnames = [portname]
+    for portname in portnames:
+        logger.info(f"Opening MIDI port {portname}")
         if not gt1000.open_ports(portname=portname):
             continue
         opened = True
