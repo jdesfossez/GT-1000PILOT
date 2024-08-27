@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "GT-1000PILOT"
-version = "0.1.2"
+version = "0.1.3"
 description = ""
 authors = ["Julien Desfossez <j@jdfz.org>"]
 license = "GPLv2"
