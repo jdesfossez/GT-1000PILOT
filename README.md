@@ -1,5 +1,9 @@
 # GT-1000PILOT - Remotely control a Boss GT-1000/GT-1000CORE
 
+<p align="center">
+<img width="200" alt="gt1000pilot-logo" src="https://github.com/user-attachments/assets/ef71fe17-919b-4a39-b296-84493101e417">
+</p>
+
 GT-1000PILOT is a web dashboard that lets you remotely control your Boss
 GT-1000/GT-1000CORE effects in real-time over MIDI. Whether you’re jamming at
 home or experimenting in the studio, GT-1000PILOT makes it easy to toggle
