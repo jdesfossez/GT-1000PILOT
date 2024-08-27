@@ -30,9 +30,8 @@ proven to be very fun and convenient to use !
 
 ## Usage
 
-This has been tested on Mac, Linux and even embedded in a Raspberry Pi hidden
-on a pedalboard (so it always come up when the pedals are powered on). It
-should work on Windows, although the package hasn’t been built or tested yet.
+This has been tested on Mac, Linux, Windows 11 and even embedded in a Raspberry Pi hidden
+on a pedalboard (so it always come up when the pedals are powered on).
 
 This currently requires the host to be connected to the USB port of the unit,
 but it could work just with MIDI connections, just need to add a convenient way
