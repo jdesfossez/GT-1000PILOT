@@ -24,22 +24,21 @@ unit !
 For live/gig usage this is probably not ideal, but for home/studio it has
 proven to be very fun and convenient to use !
 
-
+<p align="center">
 <img width="500" alt="gt1000pilot-fx" src="https://github.com/user-attachments/assets/48bd7944-8d1a-449e-b419-6db9105991d7">
 <img width="500" alt="gt1000pilot-comp" src="https://github.com/user-attachments/assets/518028ca-1603-41e0-96b0-0c3583e063e4">
 <img width="500" alt="gt1000pilot-pedalfx" src="https://github.com/user-attachments/assets/429e2278-d8d9-4a81-9cae-3acde65d9d16">
 <img width="500" alt="gt1000pilot-delays" src="https://github.com/user-attachments/assets/5cfd74b8-127e-461c-ba53-0c5445197190">
-
 ![usage](https://github.com/user-attachments/assets/9fb24edc-6d52-46ae-885a-a974bfc6e001)
+</p>
 
 ## Usage
 
 This has been tested on Mac, Linux, Windows 11 and even embedded in a Raspberry Pi hidden
 on a pedalboard (so it always come up when the pedals are powered on).
 
-This currently requires the host to be connected to the USB port of the unit,
-but it could work just with MIDI connections, just need to add a convenient way
-to configure the application.
+To use, connect directly the USB port of the unit to the host running this application
+OR select the MIDI interface that can communicate with the unit.
 
 Pre-built binary packages for Linux/Mac/Windows are available in the
 [Releases](https://github.com/jdesfossez/pygt1000/releases) section. For a
