@@ -29,7 +29,7 @@ proven to be very fun and convenient to use !
 <img width="500" alt="gt1000pilot-comp" src="https://github.com/user-attachments/assets/518028ca-1603-41e0-96b0-0c3583e063e4">
 <img width="500" alt="gt1000pilot-pedalfx" src="https://github.com/user-attachments/assets/429e2278-d8d9-4a81-9cae-3acde65d9d16">
 <img width="500" alt="gt1000pilot-delays" src="https://github.com/user-attachments/assets/5cfd74b8-127e-461c-ba53-0c5445197190">
-![usage](https://github.com/user-attachments/assets/9fb24edc-6d52-46ae-885a-a974bfc6e001)
+<img width="500" alt="gt1000pilot-delays" src="https://github.com/user-attachments/assets/9fb24edc-6d52-46ae-885a-a974bfc6e001">
 </p>
 
 ## Usage
