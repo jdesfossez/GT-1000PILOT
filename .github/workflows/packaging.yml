@@ -1,0 +1,36 @@
+name: packaging
+on: [pull_request]
+jobs:
+  package_linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create Linux executable
+        uses: Martin005/pyinstaller-action@v1.2.0
+        with:
+          python_ver: '3.12'
+          spec: 'launch.py'
+          requirements: 'requirements.txt'
+          upload_exe_with_name: 'GT-1000PILOT-linux'
+          options: --onefile, --name "GT-1000PILOT-linux", --windowed, --collect-data pygt1000, --collect-data gt1000pilot, --add-data "logo.png:." -i icon.ico
+  package_mac:
+    runs-on: macos-latest
+    steps:
+      - name: Create MacOS executable
+        uses: Martin005/pyinstaller-action@v1.2.0
+        with:
+          python_ver: '3.12'
+          spec: 'launch.py'
+          requirements: 'requirements.txt'
+          upload_exe_with_name: 'GT-1000PILOT-macos'
+          options: --onefile, --name "GT-1000PILOT-macos", --windowed, --collect-data pygt1000, --collect-data gt1000pilot, --add-data "logo.png:." -i icon.icns
+  package_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Create Windows executable
+        uses: Martin005/pyinstaller-action@v1.2.0
+        with:
+          python_ver: '3.12'
+          spec: 'launch.py'
+          requirements: 'requirements.txt'
+          upload_exe_with_name: 'GT-1000PILOT-windows'
+          options: --onefile, --name "GT-1000PILOT-windows", --windowed, --collect-data pygt1000, --collect-data gt1000pilot, --add-data "logo.png;." -i icon.ico
