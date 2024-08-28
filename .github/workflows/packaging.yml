@@ -33,4 +33,4 @@ jobs:
           spec: 'launch.py'
           requirements: 'requirements.txt'
           upload_exe_with_name: 'GT-1000PILOT-windows'
-          options: --onefile, --name "GT-1000PILOT-windows", --windowed, --collect-data pygt1000, --collect-data gt1000pilot, --add-data "logo.png;." -i icon.ico
+          options: --onefile, --name "GT-1000PILOT-windows", --windowed, --collect-data pygt1000, --collect-data gt1000pilot, --add-data "logo.png;."
