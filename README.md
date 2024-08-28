@@ -37,8 +37,8 @@ proven to be very fun and convenient to use !
 This has been tested on Mac, Linux, Windows 11 and even embedded in a Raspberry Pi hidden
 on a pedalboard (so it always come up when the pedals are powered on).
 
-To use, connect directly the USB port of the unit to the host running this application
-OR select the MIDI interface that can communicate with the unit.
+To use, connect directly the USB port of the unit to the host running this
+application OR select the MIDI interface that can communicate with the unit.
 
 Pre-built binary packages for Linux/Mac/Windows are available in the
 [Releases](https://github.com/jdesfossez/pygt1000/releases) section. For a
