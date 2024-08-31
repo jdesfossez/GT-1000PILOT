@@ -16,7 +16,7 @@ callbacks_registered[state_key] = False
 
 @callback(
     Output(f"{state_key}_buttons", "children"),
-    Input("interval-component", "n_intervals"),
+    Input(f"interval-component_{state_key}", "n_intervals"),
 )
 def update_metrics(n):
     refresh_all_effects(state_key)

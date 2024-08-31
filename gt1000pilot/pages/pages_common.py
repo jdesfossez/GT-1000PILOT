@@ -1,4 +1,4 @@
-from dash import html, dcc, Input, Output, get_app
+from dash import html, dcc, Input, Output, get_app, State
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
@@ -29,6 +29,15 @@ def register_callbacks(app, fx_type):
             Input(f"{fx_type}_toggle_fx{n}", "n_clicks"),
             prevent_initial_call=True,
         )(lambda n_clicks, fx_num=n: send_fx_state_command(fx_type, fx_num, n_clicks))
+
+        app.callback(
+                [Output(f"modal_more_{fx_type}_{n}", "is_open"),
+                 Output(f"interval-component_{fx_type}", "disabled", allow_duplicate=True)],
+                [Input(f"button_more_{fx_type}_{n}", "n_clicks"),
+                 Input(f"close_{fx_type}_{n}", "n_clicks")],
+                [State(f"modal_more_{fx_type}_{n}", "is_open")],
+                prevent_initial_call=True,
+                )(lambda button_clicks, close_clicks, is_open, fx_num=n: handle_more_button(fx_type, fx_num, button_clicks, close_clicks, is_open))
 
         # Slider callback
         for s in ["slider1", "slider2"]:
@@ -113,6 +122,21 @@ def build_grid(fx_type):
 
         sliders = html.Div(
             [
+                html.Div(children=html.Button(children="+", id=f"button_more_{fx_type}_{n}"),
+                         style={"text-align": "center"}),
+                dbc.Modal(
+                    [
+                        dbc.ModalHeader(dbc.ModalTitle("Header")),
+                        dbc.ModalBody("This is the content of the modal"),
+                        dbc.ModalFooter(
+                            dbc.Button(
+                                "Close", id=f"close_{fx_type}_{n}", className="ms-auto", n_clicks=0
+                                )
+                            ),
+                        ],
+                    id=f"modal_more_{fx_type}_{n}",
+                    is_open=False,
+                    ),
                 build_one_slider(fx_type, n, slider1_dict),
                 build_one_slider(fx_type, n, slider2_dict),
             ],
@@ -237,7 +261,7 @@ def serve_layout(fx_type):
         id="button-grid",
         children=[
             dcc.Interval(
-                id="interval-component",
+                id=f"interval-component_{fx_type}",
                 interval=2 * 1000,  # in milliseconds
                 n_intervals=0,
             ),
@@ -294,6 +318,15 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
             "textDecoration": "none",
         }
 
+def handle_more_button(fx_type, fx_num, button_clicks, close_clicks, is_open):
+    # When the modal is open, we need to disable the Interval otherwise it
+    # closes the modal
+    if button_clicks or close_clicks:
+        if is_open:
+            return False, False
+        else:
+            return True, True
+    return is_open, False
 
 def handle_slider_change(value, fx_type, fx_id, slider):
     global last_action_ts
