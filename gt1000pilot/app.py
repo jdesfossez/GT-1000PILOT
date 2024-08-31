@@ -12,6 +12,7 @@ import rtmidi
 from gt1000pilot.shared import (
     gt1000,
     open_gt1000,
+    menu_color1,
     logger,
     buttons_pc_height,
 )
@@ -169,9 +170,17 @@ def launch(app):
                     }
                 )
             else:
+                fx_type = page["relative_path"][1:]
+                if fx_type == "":
+                    fx_type = "fx"
+                color = "white"
+                for i in gt1000.dash_effects[fx_type]:
+                    if i["state"] == "ON":
+                        color = menu_color1
+                        break
                 styles.append(
                     {
-                        "backgroundColor": "white",
+                        "backgroundColor": color,
                         "display": "flex",
                         "justify-content": "center",
                         "align-items": "center",

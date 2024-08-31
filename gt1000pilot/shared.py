@@ -2,8 +2,8 @@ from pygt1000 import GT1000
 import logging
 
 
-menu_color1 = "#ABBACC"
-menu_color2 = "#C1C9CB"
+menu_color1 = "#81ba7f"
+#menu_color2 = "#C1C9CB"
 # off_color = "#F2E9D8"
 off_color = "white"
 on_color = "#2D8C2A"
