@@ -67,10 +67,9 @@ def register_callbacks(app, fx_type):
         for s in ["slider1", "slider2"]:
             slider_dict = gt1000.dash_effects[fx_type][n - 1][s]
             if slider_dict is not None:
-                slider_id = f'slider_{fx_type}{n}_{slider_dict["label"]}'
+                slider_id = f"{s}_{fx_type}{n}"
 
                 app.callback(
-                    #                        Output(f"{fx_type}_toggle_fx{n}", "style"),  # Example output, adjust to your needs
                     Input(slider_id, "value"),
                     prevent_initial_call=True,
                 )(
@@ -111,7 +110,7 @@ def refresh_all_effects(fx_type):
         callbacks_registered[fx_type] = True
 
 
-def build_one_slider(fx_type, fx_id, slider):
+def build_one_slider(fx_type, fx_id, slider, slider_name):
     if slider is None:
         return html.Div()
     # Special case for EQ, we could technically find this automatically in the spec json
@@ -128,7 +127,7 @@ def build_one_slider(fx_type, fx_id, slider):
                 min=slider["min"],
                 max=slider["max"],
                 value=slider["value"],
-                id=f'slider_{fx_type}{fx_id}_{slider["label"]}',
+                id=f"{slider_name}_{fx_type}{fx_id}",
                 marks=marks,
             ),
         ]
@@ -205,8 +204,8 @@ def build_grid(fx_type):
                     style={"text-align": "center"},
                 ),
                 get_modal(fx_type, n),
-                build_one_slider(fx_type, n, slider1_dict),
-                build_one_slider(fx_type, n, slider2_dict),
+                build_one_slider(fx_type, n, slider1_dict, "slider1"),
+                build_one_slider(fx_type, n, slider2_dict, "slider2"),
             ],
             style={
                 "width": "100%",
