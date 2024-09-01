@@ -1,4 +1,4 @@
-from dash import html, dcc, Input, Output, get_app, State
+from dash import html, dcc, Input, Output, get_app, State, callback_context, ALL
 import dash_bootstrap_components as dbc
 from datetime import datetime
 
@@ -31,13 +31,37 @@ def register_callbacks(app, fx_type):
         )(lambda n_clicks, fx_num=n: send_fx_state_command(fx_type, fx_num, n_clicks))
 
         app.callback(
-                [Output(f"modal_more_{fx_type}_{n}", "is_open"),
-                 Output(f"interval-component_{fx_type}", "disabled", allow_duplicate=True)],
-                [Input(f"button_more_{fx_type}_{n}", "n_clicks"),
-                 Input(f"close_{fx_type}_{n}", "n_clicks")],
-                [State(f"modal_more_{fx_type}_{n}", "is_open")],
-                prevent_initial_call=True,
-                )(lambda button_clicks, close_clicks, is_open, fx_num=n: handle_more_button(fx_type, fx_num, button_clicks, close_clicks, is_open))
+            [
+                Output(f"modal_more_{fx_type}_{n}", "is_open"),
+                Output(
+                    f"interval-component_{fx_type}", "disabled", allow_duplicate=True
+                ),
+                Output(f"modal-body_{fx_type}_{n}", "children"),
+            ],
+            [
+                Input(f"button_more_{fx_type}_{n}", "n_clicks"),
+                Input(f"close_{fx_type}_{n}", "n_clicks"),
+                Input(
+                    {
+                        "type": "effect-button",
+                        "fx_type": fx_type,
+                        "fx_id": n,
+                        "label": ALL,
+                    },
+                    "n_clicks",
+                ),
+            ],
+            [State(f"modal_more_{fx_type}_{n}", "is_open")],
+            prevent_initial_call=True,
+        )(
+            lambda button_clicks,
+            close_clicks,
+            all_buttons,
+            is_open,
+            fx_num=n: handle_more_button(
+                fx_type, fx_num, button_clicks, close_clicks, all_buttons, is_open
+            )
+        )
 
         # Slider callback
         for s in ["slider1", "slider2"]:
@@ -111,6 +135,60 @@ def build_one_slider(fx_type, fx_id, slider):
     )
 
 
+# Function to generate the button grid
+def generate_modal_button_grid(fx_type, fx_id, button_labels, selected_button):
+    num_buttons = len(button_labels)
+    buttons = []
+    for i in range(num_buttons):
+        label = button_labels[i]
+        buttons.append(
+            dbc.Button(
+                children=label,
+                id={
+                    "type": "effect-button",
+                    "fx_type": fx_type,
+                    "fx_id": fx_id,
+                    "label": label,
+                },
+                color="primary" if label != selected_button else "secondary",
+                style={"margin": "5px", "width": "100%", "height": "100%"},
+                n_clicks=0,
+            )
+        )
+
+    # Create a responsive grid layout for the buttons
+    grid_layout = dbc.Row(
+        [dbc.Col(button, width=3) for button in buttons],
+        className="g-2",
+        style={"display": "flex", "flex-wrap": "wrap"},
+    )
+
+    return grid_layout
+
+
+def get_modal(fx_type, fx_id):
+    return dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(f"{fx_type}{fx_id}")),
+            dbc.ModalBody(id=f"modal-body_{fx_type}_{fx_id}"),
+            dbc.ModalFooter(
+                dbc.Button(
+                    "Close",
+                    id=f"close_{fx_type}_{fx_id}",
+                    className="ms-auto",
+                    n_clicks=0,
+                )
+            ),
+        ],
+        id=f"modal_more_{fx_type}_{fx_id}",
+        is_open=False,
+        backdrop="static",
+        size="xl",  # Extra large modal to cover the full screen
+        centered=True,
+        style={"maxWidth": "100vw", "maxHeight": "100vh"},
+    )
+
+
 def build_grid(fx_type):
     grid = []
     num_effects = len(gt1000.dash_effects[fx_type])
@@ -122,21 +200,11 @@ def build_grid(fx_type):
 
         sliders = html.Div(
             [
-                html.Div(children=html.Button(children="+", id=f"button_more_{fx_type}_{n}"),
-                         style={"text-align": "center"}),
-                dbc.Modal(
-                    [
-                        dbc.ModalHeader(dbc.ModalTitle("Header")),
-                        dbc.ModalBody("This is the content of the modal"),
-                        dbc.ModalFooter(
-                            dbc.Button(
-                                "Close", id=f"close_{fx_type}_{n}", className="ms-auto", n_clicks=0
-                                )
-                            ),
-                        ],
-                    id=f"modal_more_{fx_type}_{n}",
-                    is_open=False,
-                    ),
+                html.Div(
+                    children=html.Button(children="+", id=f"button_more_{fx_type}_{n}"),
+                    style={"text-align": "center"},
+                ),
+                get_modal(fx_type, n),
                 build_one_slider(fx_type, n, slider1_dict),
                 build_one_slider(fx_type, n, slider2_dict),
             ],
@@ -264,6 +332,7 @@ def serve_layout(fx_type):
                 id=f"interval-component_{fx_type}",
                 interval=2 * 1000,  # in milliseconds
                 n_intervals=0,
+                disabled=False,
             ),
             html.Div(id=f"{fx_type}_buttons", children=generate_buttons(fx_type)),
         ],
@@ -278,7 +347,7 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
     if gt1000.dash_effects[fx_type][fx_num - 1]["state"] == "ON":
         logger.info(f"{fx_type}{fx_num} enabled")
         try:
-            gt1000.toggle_fx_state(fx_type, fx_num, "OFF")
+            gt1000.toggle_fx_state(fx_type, str(fx_num), "OFF")
         except Exception:
             # Catch all to avoid dying on unhandled exceptions
             logger.exception("Exception caught for toggle_fx_state")
@@ -298,7 +367,7 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
         }
     else:
         try:
-            gt1000.toggle_fx_state(fx_type, fx_num, "ON")
+            gt1000.toggle_fx_state(fx_type, str(fx_num), "ON")
         except Exception:
             # Catch all to avoid dying on unhandled exceptions
             logger.exception("Exception caught for toggle_fx_state")
@@ -318,15 +387,56 @@ def send_fx_state_command(fx_type, fx_num, n_clicks):
             "textDecoration": "none",
         }
 
-def handle_more_button(fx_type, fx_num, button_clicks, close_clicks, is_open):
-    # When the modal is open, we need to disable the Interval otherwise it
-    # closes the modal
-    if button_clicks or close_clicks:
-        if is_open:
-            return False, False
-        else:
-            return True, True
-    return is_open, False
+
+def handle_more_button(
+    fx_type, fx_num, button_clicks, close_clicks, all_buttons, is_open
+):
+    ctx = callback_context
+    trigger_id = ctx.triggered[0]["prop_id"].split(".")[0]
+
+    # Determine which action was triggered
+    if f"button_more_{fx_type}_{fx_num}" in trigger_id and button_clicks:
+        # Open the modal
+        all_types = gt1000.get_all_fx_types(fx_type)
+        return (
+            True,
+            True,
+            generate_modal_button_grid(
+                fx_type,
+                fx_num,
+                all_types,
+                selected_button=gt1000.dash_effects[fx_type][fx_num - 1]["name"],
+            ),
+        )
+    elif f"close_{fx_type}_{fx_num}" in trigger_id and close_clicks:
+        # Close the modal
+        return False, False, html.Div()
+
+    elif "effect-button" in trigger_id:
+        # Handle button selection within the modal
+        all_types = gt1000.get_all_fx_types(fx_type)
+        selected_button_id = None
+
+        for i, click in enumerate(all_buttons):
+            if click:
+                selected_button_id = i
+                break
+
+        if selected_button_id is not None:
+            selected_effect = all_types[selected_button_id]
+            print(f"Switching {fx_type}{fx_num} to {selected_effect}")
+            gt1000.dash_effects[fx_type][fx_num - 1]["name"] = selected_effect
+            return (
+                True,
+                True,
+                generate_modal_button_grid(
+                    fx_type, fx_num, all_types, selected_button=selected_effect
+                ),
+            )
+
+    # Default return to keep the current state
+    return is_open, False, html.Div()
+
 
 def handle_slider_change(value, fx_type, fx_id, slider):
     global last_action_ts
