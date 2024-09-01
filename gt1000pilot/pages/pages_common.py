@@ -424,11 +424,12 @@ def handle_more_button(
 
         if selected_button_id is not None:
             selected_effect = all_types[selected_button_id]
-            print(f"Switching {fx_type}{fx_num} to {selected_effect}")
+            logger.info(f"Switching {fx_type}{fx_num} to {selected_effect}")
+            gt1000.set_fx_type_type(fx_type, fx_num, selected_effect)
             gt1000.dash_effects[fx_type][fx_num - 1]["name"] = selected_effect
             return (
-                True,
-                True,
+                False,
+                False,
                 generate_modal_button_grid(
                     fx_type, fx_num, all_types, selected_button=selected_effect
                 ),
